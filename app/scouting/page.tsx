@@ -31,7 +31,15 @@ export default function Scouting(){
    if(minValue)query=query.gte("estimated_value_eur",Number(minValue)*1000000);
    if(maxValue)query=query.lte("estimated_value_eur",Number(maxValue)*1000000);
    const sortCol=sort==="age"?"age":sort==="estimatedValue"?"estimated_value_eur":"overall";
-   const {data,error,count}=await query.order(sortCol,{ascending:sortDirection==="asc",nullsFirst:false}).range(next,next+PAGE_SIZE-1);
+   query=query.order(sortCol,{ascending:sortDirection==="asc",nullsFirst:false});
+    if(sort==="overall"){
+      query=query.order("age",{ascending:false,nullsFirst:false}).order("estimated_value_eur",{ascending:false,nullsFirst:false});
+    }else if(sort==="age"){
+      query=query.order("overall",{ascending:false,nullsFirst:false}).order("estimated_value_eur",{ascending:false,nullsFirst:false});
+    }else{
+      query=query.order("overall",{ascending:false,nullsFirst:false}).order("age",{ascending:false,nullsFirst:false});
+    }
+    const {data,error,count}=await query.order("name",{ascending:true}).range(next,next+PAGE_SIZE-1);
    if(error)throw error;
    setRows((data||[]).map((x:any)=>({id:Number(x.external_id),name:x.name,club:x.club||"—",league:x.league||"—",nationality:x.nationality||"—",position:x.position||"—",overall:x.overall,pace:x.pace,shooting:x.shooting,passing:x.passing,dribbling:x.dribbling,defending:x.defending,physical:x.physical,avatarUrl:x.avatar_url,age:x.age,estimatedValue:x.estimated_value_eur!=null?Number(x.estimated_value_eur):undefined,alternatePositions:Array.isArray(x.alternate_positions)?x.alternate_positions.map((p:any)=>p?.shortLabel||p?.label).filter(Boolean):[],gender:x.gender?.label,playStyles:Array.isArray(x.player_abilities)?x.player_abilities.map((p:any)=>String(p?.label||"").trim()).filter(Boolean):[],rank:x.rank})));
    setOffset(next);setResultTotal(count||0);
@@ -61,7 +69,7 @@ export default function Scouting(){
   {loading?<div style={empty}>Oyuncular yükleniyor…</div>:<div style={{display:"grid",gap:10}}>{list.map(x=><div className="scoutRow" key={x.id} onClick={()=>router.push(`/scouting/${x.id}`)} role="button" tabIndex={0}>
    <div style={{display:"flex",alignItems:"center",gap:10}}>{x.avatarUrl&&<img src={x.avatarUrl} alt="" width={48} height={48} style={{objectFit:"contain"}}/>}<div><b>{x.name}</b><small style={{display:"block",color:"#aab7af"}}>{x.club} • {x.league}</small></div></div><span><b>{x.position}</b>{x.alternatePositions.length>0&&<small style={{display:"block",color:"#7f9187",marginTop:3}}>Alt: {x.alternatePositions.join(" · ")}</small>}</span><strong style={{fontSize:22,color:"#49ad60"}}>{x.overall}</strong><Stat n="YAŞ" v={x.age}/><span style={{textAlign:"center"}}><small style={{display:"block",color:"#718078"}}>DEĞER</small><b>{x.estimatedValue!=null?formatValue(x.estimatedValue):"—"}</b></span><button onClick={e=>{e.stopPropagation();shortlist(x)}} style={button}>Shortlist</button>
   </div>)}{!list.length&&<div style={empty}>Bu filtrelerle oyuncu bulunamadı.</div>}</div>}
-  {<div style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:18}}><button disabled={offset===0||loading} onClick={()=>load(Math.max(0,offset-PAGE_SIZE),"")} style={navButton}>← Önceki 200</button><span style={{color:"#8fa399",alignSelf:"center"}}>{offset+1}–{Math.min(offset+PAGE_SIZE,resultTotal)}</span><button disabled={loading||offset+PAGE_SIZE>=resultTotal} onClick={()=>load(offset+PAGE_SIZE,"")} style={navButton}>Sonraki 200 →</button></div>}
+  {resultTotal>0&&<div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:10,marginTop:18}}><div>{offset>0&&<button disabled={loading} onClick={()=>load(Math.max(0,offset-PAGE_SIZE),q.trim())} style={navButton}>← Önceki 200</button>}</div><span style={{color:"#8fa399"}}>{offset+1}–{Math.min(offset+PAGE_SIZE,resultTotal)} / {resultTotal}</span><div style={{textAlign:"right"}}>{offset+PAGE_SIZE<resultTotal&&<button disabled={loading} onClick={()=>load(offset+PAGE_SIZE,q.trim())} style={navButton}>Sonraki 200 →</button>}</div></div>}
  </div></AppShell>
 }
 function formatValue(v:number){return v>=1000000?`€${(v/1000000).toLocaleString("tr-TR",{maximumFractionDigits:1})}M`:`€${Math.round(v/1000).toLocaleString("tr-TR")}K`}
