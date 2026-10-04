@@ -1,5 +1,6 @@
 "use client";
-import {useState} from "react";\nimport {useRouter} from "next/navigation";
+import {useState} from "react";
+import {useRouter} from "next/navigation";
 import {LayoutDashboard,Users,Search,BrainCircuit,BarChart3,Settings,Shield,TrendingUp,Activity,ArrowUpRight} from "lucide-react";
 const players=[["Mert Günok","KL","7.4"],["Semih Kılıçsoy","ST","7.8"],["Gedson Fernandes","MO","7.6"],["Rafa Silva","OS","8.1"],["Emirhan Topçu","STP","7.2"]];
 const nav=[["Genel Bakış",LayoutDashboard],["Aktif Kadro",Users],["Oyuncular",Activity],["Transfer Merkezi",Search],["AI Teknik Asistan",BrainCircuit],["Analiz",BarChart3]];
