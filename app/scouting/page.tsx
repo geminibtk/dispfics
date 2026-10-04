@@ -5,7 +5,7 @@ import {createClient} from "../../lib/supabase";
 import AppShell from "../components/AppShell";
 
 type EAPlayer={id:number;overallRating:number;firstName:string;lastName:string;commonName?:string|null;leagueName?:string;avatarUrl?:string;team?:{label?:string};nationality?:{label?:string};position?:{shortLabel?:string;label?:string};stats?:Record<string,{value:number}>};
-type Row={id:number;name:string;club:string;league:string;nationality:string;position:string;overall:number;pace?:number;shooting?:number;passing?:number;dribbling?:number;defending?:number;physical?:number;avatarUrl?:string;age?:number;estimatedValue?:number};
+type Row={id:number;name:string;club:string;league:string;nationality:string;position:string;overall:number;pace?:number;shooting?:number;passing?:number;dribbling?:number;defending?:number;physical?:number;avatarUrl?:string;age?:number;estimatedValue?:number;alternatePositions:string[]};
 
 const EA_URL="/api/ea-ratings";
 const PAGE_SIZE=100,TOTAL=19789;
@@ -21,18 +21,18 @@ export default function Scouting(){
    if(!r.ok)throw new Error("EA Ratings isteği başarısız.");
    const j=await r.json();const raw:EAPlayer[]=Array.isArray(j)?j:(j.items||j.results||j.players||[]);
    const ids=raw.map(x=>String(x.id));
-   const {data:db,error:dbError}=await s.from("scouting_players").select("external_id,age,estimated_value_eur").in("external_id",ids);
+   const {data:db,error:dbError}=await s.from("scouting_players").select("external_id,age,estimated_value_eur,alternate_positions").in("external_id",ids);
    if(dbError)throw dbError;
    const meta=new Map((db||[]).map((x:any)=>[String(x.external_id),x]));
-   setRows(raw.map(x=>{const m:any=meta.get(String(x.id));return {id:x.id,name:x.commonName||[x.firstName,x.lastName].filter(Boolean).join(" "),club:x.team?.label||"—",league:x.leagueName||"—",nationality:x.nationality?.label||"—",position:x.position?.shortLabel||x.position?.label||"—",overall:x.overallRating,pace:x.stats?.pac?.value,shooting:x.stats?.sho?.value,passing:x.stats?.pas?.value,dribbling:x.stats?.dri?.value,defending:x.stats?.def?.value,physical:x.stats?.phy?.value,avatarUrl:x.avatarUrl,age:m?.age??undefined,estimatedValue:m?.estimated_value_eur!=null?Number(m.estimated_value_eur):undefined}}));
+   setRows(raw.map(x=>{const m:any=meta.get(String(x.id));return {id:x.id,name:x.commonName||[x.firstName,x.lastName].filter(Boolean).join(" "),club:x.team?.label||"—",league:x.leagueName||"—",nationality:x.nationality?.label||"—",position:x.position?.shortLabel||x.position?.label||"—",overall:x.overallRating,pace:x.stats?.pac?.value,shooting:x.stats?.sho?.value,passing:x.stats?.pas?.value,dribbling:x.stats?.dri?.value,defending:x.stats?.def?.value,physical:x.stats?.phy?.value,avatarUrl:x.avatarUrl,age:m?.age??undefined,estimatedValue:m?.estimated_value_eur!=null?Number(m.estimated_value_eur):undefined,alternatePositions:Array.isArray(m?.alternate_positions)?m.alternate_positions.map((p:any)=>p?.shortLabel||p?.label).filter(Boolean):[]}}));
    setOffset(next);
   }catch(e){setRows([]);setMsg(e instanceof Error?e.message:"EA Ratings yüklenemedi.");}
   finally{setLoading(false)}
  }
  useEffect(()=>{load(0)},[]);
- const list=useMemo(()=>rows.filter(x=>(!pos||x.position===pos)&&(!min||x.overall>=Number(min))),[rows,pos,min]);
+ const list=useMemo(()=>rows.filter(x=>(!pos||x.position===pos||x.alternatePositions.includes(pos))&&(!min||x.overall>=Number(min))),[rows,pos,min]);
  const page=Math.floor(offset/PAGE_SIZE)+1,totalPages=Math.ceil(TOTAL/PAGE_SIZE);
- const positions=Array.from(new Set(rows.map(x=>x.position))).filter(Boolean);
+ const positions=Array.from(new Set(rows.flatMap(x=>[x.position,...x.alternatePositions]))).filter(Boolean);
  async function syncEA(){setLoading(true);setMsg("EA verileri Supabase’e senkronize ediliyor…");const {data:{session}}=await s.auth.getSession();if(!session){router.replace("/login");return}try{const r=await fetch("/api/ea-sync",{method:"POST",headers:{Authorization:`Bearer ${session.access_token}`}});const j=await r.json();if(!r.ok)throw new Error(j.error||"Senkronizasyon başarısız.");setMsg(`${j.synced?.toLocaleString("tr-TR")||0} oyuncu Supabase’e senkronize edildi.`)}catch(e){setMsg(e instanceof Error?e.message:"Senkronizasyon başarısız.")}finally{setLoading(false)}}
  async function shortlist(x:Row){const {data:{user}}=await s.auth.getUser();if(!user)return;const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).limit(1).maybeSingle();if(!m)return;const {error}=await s.from("transfer_targets").insert({club_id:m.club_id,name:x.name,position:x.position,current_club:x.club,market_value:0,rating:x.overall/10,priority:"medium",notes:"EA SPORTS FC Ratings görünümünden shortlist'e eklendi"});setMsg(error?error.message:x.name+" shortlist'e eklendi.")}
  return <AppShell title="Oyuncu Keşfi"><div>
@@ -40,7 +40,7 @@ export default function Scouting(){
   <div className="scoutFilters"><input placeholder="19.789 oyuncuda ara" value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")load(0,q.trim())}} style={input}/><button onClick={()=>load(0,q.trim())} disabled={loading} style={button}>Ara</button><select value={pos} onChange={e=>setPos(e.target.value)} style={input}><option value="">Tüm pozisyonlar</option>{positions.map(x=><option key={x}>{x}</option>)}</select><input type="number" placeholder="Minimum OVR" value={min} onChange={e=>setMin(e.target.value)} style={input}/></div>
   <p style={{color:"#9bcba7"}}>{msg}</p>
   {loading?<div style={empty}>EA Ratings yükleniyor…</div>:<div style={{display:"grid",gap:10}}>{list.map(x=><div className="scoutRow" key={x.id}>
-   <div style={{display:"flex",alignItems:"center",gap:10}}>{x.avatarUrl&&<img src={x.avatarUrl} alt="" width={48} height={48} style={{objectFit:"contain"}}/>}<div><b>{x.name}</b><small style={{display:"block",color:"#aab7af"}}>{x.club} • {x.league}</small></div></div><span>{x.position}</span><strong style={{fontSize:22,color:"#49ad60"}}>{x.overall}</strong><Stat n="YAŞ" v={x.age}/><span style={{textAlign:"center"}}><small style={{display:"block",color:"#718078"}}>DEĞER</small><b>{x.estimatedValue!=null?formatValue(x.estimatedValue):"—"}</b></span><Stat n="PAC" v={x.pace}/><Stat n="SHO" v={x.shooting}/><Stat n="PAS" v={x.passing}/><Stat n="DRI" v={x.dribbling}/><Stat n="DEF" v={x.defending}/><Stat n="PHY" v={x.physical}/><button onClick={()=>shortlist(x)} style={button}>Shortlist</button>
+   <div style={{display:"flex",alignItems:"center",gap:10}}>{x.avatarUrl&&<img src={x.avatarUrl} alt="" width={48} height={48} style={{objectFit:"contain"}}/>}<div><b>{x.name}</b><small style={{display:"block",color:"#aab7af"}}>{x.club} • {x.league}</small></div></div><span><b>{x.position}</b>{x.alternatePositions.length>0&&<small style={{display:"block",color:"#7f9187",marginTop:3}}>Alt: {x.alternatePositions.join(" · ")}</small>}</span><strong style={{fontSize:22,color:"#49ad60"}}>{x.overall}</strong><Stat n="YAŞ" v={x.age}/><span style={{textAlign:"center"}}><small style={{display:"block",color:"#718078"}}>DEĞER</small><b>{x.estimatedValue!=null?formatValue(x.estimatedValue):"—"}</b></span><Stat n="PAC" v={x.pace}/><Stat n="SHO" v={x.shooting}/><Stat n="PAS" v={x.passing}/><Stat n="DRI" v={x.dribbling}/><Stat n="DEF" v={x.defending}/><Stat n="PHY" v={x.physical}/><button onClick={()=>shortlist(x)} style={button}>Shortlist</button>
   </div>)}{!list.length&&<div style={empty}>Bu filtrelerle oyuncu bulunamadı.</div>}</div>}
   {!q.trim()&&<div style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:18}}><button disabled={offset===0||loading} onClick={()=>load(Math.max(0,offset-100),"")} style={navButton}>← Önceki 100</button><span style={{color:"#8fa399",alignSelf:"center"}}>{offset+1}–{Math.min(offset+100,19789)}</span><button disabled={loading||offset+100>=19789} onClick={()=>load(offset+100,"")} style={navButton}>Sonraki 100 →</button></div>}
  </div></AppShell>
