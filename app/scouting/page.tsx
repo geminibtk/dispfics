@@ -12,30 +12,37 @@ const PAGE_SIZE=200,TOTAL=19789;
 
 export default function Scouting(){
  const s=createClient(),router=useRouter();
- const [rows,setRows]=useState<Row[]>([]),[q,setQ]=useState(""),[pos,setPos]=useState(""),[min,setMin]=useState(""),[msg,setMsg]=useState(""),[offset,setOffset]=useState(0),[loading,setLoading]=useState(true),[allCountries,setAllCountries]=useState<string[]>([]),[allLeagues,setAllLeagues]=useState<string[]>([]),[allPositions,setAllPositions]=useState<string[]>([]);
+ const [rows,setRows]=useState<Row[]>([]),[q,setQ]=useState(""),[pos,setPos]=useState(""),[min,setMin]=useState(""),[msg,setMsg]=useState(""),[offset,setOffset]=useState(0),[loading,setLoading]=useState(true),[allCountries,setAllCountries]=useState<string[]>([]),[allLeagues,setAllLeagues]=useState<string[]>([]),[allPositions,setAllPositions]=useState<string[]>([]),[resultTotal,setResultTotal]=useState(TOTAL);
  const [gender,setGender]=useState(""),[league,setLeague]=useState(""),[country,setCountry]=useState(""),[sort,setSort]=useState("overall"),[maxOverall,setMaxOverall]=useState(""),[minAge,setMinAge]=useState(""),[maxAge,setMaxAge]=useState(""),[minValue,setMinValue]=useState(""),[maxValue,setMaxValue]=useState(""),[sortDirection,setSortDirection]=useState("desc");
  async function load(next=0, search=q.trim()){
   setLoading(true);setMsg("");
   const {data:{user}}=await s.auth.getUser();if(!user){router.replace("/login");return}
   try{
-   const r=await fetch(`${EA_URL}?offset=${next}${search?`&search=${encodeURIComponent(search)}`:""}`);
-   if(!r.ok)throw new Error("EA Ratings isteği başarısız.");
-   const j=await r.json();const raw:EAPlayer[]=Array.isArray(j)?j:(j.items||j.results||j.players||[]);
-   const ids=raw.map(x=>String(x.id));
-   const {data:db,error:dbError}=await s.from("scouting_players").select("external_id,age,estimated_value_eur,alternate_positions,gender,player_abilities,rank").in("external_id",ids);
-   if(dbError)throw dbError;
-   const meta=new Map((db||[]).map((x:any)=>[String(x.external_id),x]));
-   setRows(raw.map(x=>{const m:any=meta.get(String(x.id));return {id:x.id,name:x.commonName||[x.firstName,x.lastName].filter(Boolean).join(" "),club:x.team?.label||"—",league:x.leagueName||"—",nationality:x.nationality?.label||"—",position:x.position?.shortLabel||x.position?.label||"—",overall:x.overallRating,pace:x.stats?.pac?.value,shooting:x.stats?.sho?.value,passing:x.stats?.pas?.value,dribbling:x.stats?.dri?.value,defending:x.stats?.def?.value,physical:x.stats?.phy?.value,avatarUrl:x.avatarUrl,age:m?.age??undefined,estimatedValue:m?.estimated_value_eur!=null?Number(m.estimated_value_eur):undefined,alternatePositions:Array.isArray(m?.alternate_positions)?m.alternate_positions.map((p:any)=>p?.shortLabel||p?.label).filter(Boolean):[],gender:m?.gender?.label,playStyles:Array.isArray(m?.player_abilities)?m.player_abilities.map((p:any)=>String(p?.label||"").trim()).filter(Boolean):[],rank:m?.rank}}));
-   setOffset(next);
-  }catch(e){setRows([]);setMsg(e instanceof Error?e.message:"EA Ratings yüklenemedi.");}
+   let query=s.from("scouting_players").select("external_id,name,club,league,nationality,position,overall,pace,shooting,passing,dribbling,defending,physical,avatar_url,age,estimated_value_eur,alternate_positions,gender,player_abilities,rank",{count:"exact"});
+   if(search)query=query.or(`name.ilike.%${search}%,club.ilike.%${search}%,nationality.ilike.%${search}%`);
+   if(gender)query=query.contains("gender",{label:gender});
+   if(league)query=query.eq("league",league);
+   if(country)query=query.eq("nationality",country);
+   if(pos)query=query.or(`position.eq.${pos},alternate_positions.cs.[{"shortLabel":"${pos}"}]`);
+   if(min)query=query.gte("overall",Number(min));
+   if(maxOverall)query=query.lte("overall",Number(maxOverall));
+   if(minAge)query=query.gte("age",Number(minAge));
+   if(maxAge)query=query.lte("age",Number(maxAge));
+   if(minValue)query=query.gte("estimated_value_eur",Number(minValue)*1000000);
+   if(maxValue)query=query.lte("estimated_value_eur",Number(maxValue)*1000000);
+   const sortCol=sort==="age"?"age":sort==="estimatedValue"?"estimated_value_eur":"overall";
+   const {data,error,count}=await query.order(sortCol,{ascending:sortDirection==="asc",nullsFirst:false}).range(next,next+PAGE_SIZE-1);
+   if(error)throw error;
+   setRows((data||[]).map((x:any)=>({id:Number(x.external_id),name:x.name,club:x.club||"—",league:x.league||"—",nationality:x.nationality||"—",position:x.position||"—",overall:x.overall,pace:x.pace,shooting:x.shooting,passing:x.passing,dribbling:x.dribbling,defending:x.defending,physical:x.physical,avatarUrl:x.avatar_url,age:x.age,estimatedValue:x.estimated_value_eur!=null?Number(x.estimated_value_eur):undefined,alternatePositions:Array.isArray(x.alternate_positions)?x.alternate_positions.map((p:any)=>p?.shortLabel||p?.label).filter(Boolean):[],gender:x.gender?.label,playStyles:Array.isArray(x.player_abilities)?x.player_abilities.map((p:any)=>String(p?.label||"").trim()).filter(Boolean):[],rank:x.rank})));
+   setOffset(next);setResultTotal(count||0);
+  }catch(e){setRows([]);setMsg(e instanceof Error?e.message:"Oyuncular yüklenemedi.");}
   finally{setLoading(false)}
  }
  useEffect(()=>{load(0);(async()=>{const {data}=await s.from("scouting_players").select("nationality,league,position,alternate_positions");if(data){setAllCountries(Array.from(new Set(data.map((x:any)=>x.nationality).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"tr")));setAllLeagues(Array.from(new Set(data.map((x:any)=>x.league).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"tr")));setAllPositions(Array.from(new Set(data.flatMap((x:any)=>[x.position,...(Array.isArray(x.alternate_positions)?x.alternate_positions.map((p:any)=>p?.shortLabel||p?.label):[])].filter(Boolean)))).sort((a,b)=>a.localeCompare(b,"tr")))}})()},[]);
- const filtered=useMemo(()=>rows.filter(x=>(!gender||x.gender===gender)&&(!league||x.league===league)&&(!pos||x.position===pos||x.alternatePositions.includes(pos))&&(!country||x.nationality===country)&&(!min||x.overall>=Number(min))&&(!maxOverall||x.overall<=Number(maxOverall))&&(!minAge||Number(x.age)>=Number(minAge))&&(!maxAge||Number(x.age)<=Number(maxAge))&&(!minValue||Number(x.estimatedValue)>=Number(minValue)*1000000)&&(!maxValue||Number(x.estimatedValue)<=Number(maxValue)*1000000)),[rows,gender,league,pos,country,min,maxOverall,minAge,maxAge,minValue,maxValue]);
- const list=useMemo(()=>[...filtered].sort((a,b)=>{const key=sort==="age"?"age":sort==="estimatedValue"?"estimatedValue":"overall";const av=Number((a as any)[key]??-1),bv=Number((b as any)[key]??-1);return sortDirection==="asc"?av-bv:bv-av}),[filtered,sort,sortDirection]);
+ const list=rows;
  const leagues=allLeagues;
  const countries=allCountries;
-  const positions=allPositions;
+ const positions=allPositions;
  async function syncEA(){setLoading(true);setMsg("EA verileri Supabase’e senkronize ediliyor…");const {data:{session}}=await s.auth.getSession();if(!session){router.replace("/login");return}try{const r=await fetch("/api/ea-sync",{method:"POST",headers:{Authorization:`Bearer ${session.access_token}`}});const j=await r.json();if(!r.ok)throw new Error(j.error||"Senkronizasyon başarısız.");setMsg(`${j.synced?.toLocaleString("tr-TR")||0} oyuncu Supabase’e senkronize edildi.`)}catch(e){setMsg(e instanceof Error?e.message:"Senkronizasyon başarısız.")}finally{setLoading(false)}}
  async function shortlist(x:Row){const {data:{user}}=await s.auth.getUser();if(!user)return;const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).limit(1).maybeSingle();if(!m)return;const {error}=await s.from("transfer_targets").insert({club_id:m.club_id,name:x.name,position:x.position,current_club:x.club,market_value:0,rating:x.overall/10,priority:"medium",notes:"EA SPORTS FC Ratings görünümünden shortlist'e eklendi"});setMsg(error?error.message:x.name+" shortlist'e eklendi.")}
  return <AppShell title="Oyuncu Keşfi"><div>
@@ -50,11 +57,11 @@ export default function Scouting(){
    <label>Yaş<span style={{display:"flex",gap:6}}><input type="number" placeholder="Min" value={minAge} onChange={e=>setMinAge(e.target.value)} style={input}/><input type="number" placeholder="Max" value={maxAge} onChange={e=>setMaxAge(e.target.value)} style={input}/></span></label>
    <label>Sıralama Ölçütü<select value={sort} onChange={e=>setSort(e.target.value)} style={input}><option value="estimatedValue">Değer</option><option value="overall">Genel</option><option value="age">Yaş</option></select></label>
    <label>Sıralama Yönü<select value={sortDirection} onChange={e=>setSortDirection(e.target.value)} style={input}><option value="asc">Düşükten Yükseğe</option><option value="desc">Yüksekten Düşüğe</option></select></label>
-   </div><div className="scoutAdvancedActions"><button onClick={()=>{setGender("");setLeague("");setPos("");setCountry("");setMin("");setMaxOverall("");setMinAge("");setMaxAge("");setMinValue("");setMaxValue("");setSort("overall");setSortDirection("desc")}} style={navButton}>Filtreleri Sıfırla</button><button onClick={()=>load(0,q.trim())} style={button}>Filtreleri Uygula</button></div></details><p style={{color:"#9bcba7"}}>{msg}</p>
+   </div><div className="scoutAdvancedActions"><button onClick={()=>{setGender("");setLeague("");setPos("");setCountry("");setMin("");setMaxOverall("");setMinAge("");setMaxAge("");setMinValue("");setMaxValue("");setSort("overall");setSortDirection("desc");setTimeout(()=>load(0,q.trim()),0)}} style={navButton}>Filtreleri Sıfırla</button><button onClick={()=>load(0,q.trim())} style={button}>Filtreleri Uygula</button></div></details><p style={{color:"#9bcba7"}}>{msg}</p>
   {loading?<div style={empty}>Oyuncular yükleniyor…</div>:<div style={{display:"grid",gap:10}}>{list.map(x=><div className="scoutRow" key={x.id} onClick={()=>router.push(`/scouting/${x.id}`)} role="button" tabIndex={0}>
    <div style={{display:"flex",alignItems:"center",gap:10}}>{x.avatarUrl&&<img src={x.avatarUrl} alt="" width={48} height={48} style={{objectFit:"contain"}}/>}<div><b>{x.name}</b><small style={{display:"block",color:"#aab7af"}}>{x.club} • {x.league}</small></div></div><span><b>{x.position}</b>{x.alternatePositions.length>0&&<small style={{display:"block",color:"#7f9187",marginTop:3}}>Alt: {x.alternatePositions.join(" · ")}</small>}</span><strong style={{fontSize:22,color:"#49ad60"}}>{x.overall}</strong><Stat n="YAŞ" v={x.age}/><span style={{textAlign:"center"}}><small style={{display:"block",color:"#718078"}}>DEĞER</small><b>{x.estimatedValue!=null?formatValue(x.estimatedValue):"—"}</b></span><button onClick={e=>{e.stopPropagation();shortlist(x)}} style={button}>Shortlist</button>
   </div>)}{!list.length&&<div style={empty}>Bu filtrelerle oyuncu bulunamadı.</div>}</div>}
-  {!q.trim()&&<div style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:18}}><button disabled={offset===0||loading} onClick={()=>load(Math.max(0,offset-PAGE_SIZE),"")} style={navButton}>← Önceki 200</button><span style={{color:"#8fa399",alignSelf:"center"}}>{offset+1}–{Math.min(offset+PAGE_SIZE,TOTAL)}</span><button disabled={loading||offset+PAGE_SIZE>=TOTAL} onClick={()=>load(offset+PAGE_SIZE,"")} style={navButton}>Sonraki 200 →</button></div>}
+  {<div style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:18}}><button disabled={offset===0||loading} onClick={()=>load(Math.max(0,offset-PAGE_SIZE),"")} style={navButton}>← Önceki 200</button><span style={{color:"#8fa399",alignSelf:"center"}}>{offset+1}–{Math.min(offset+PAGE_SIZE,resultTotal)}</span><button disabled={loading||offset+PAGE_SIZE>=resultTotal} onClick={()=>load(offset+PAGE_SIZE,"")} style={navButton}>Sonraki 200 →</button></div>}
  </div></AppShell>
 }
 function formatValue(v:number){return v>=1000000?`€${(v/1000000).toLocaleString("tr-TR",{maximumFractionDigits:1})}M`:`€${Math.round(v/1000).toLocaleString("tr-TR")}K`}
