@@ -7,7 +7,7 @@ import AppShell from "../components/AppShell";
 type EAPlayer={id:number;overallRating:number;firstName:string;lastName:string;commonName?:string|null;leagueName?:string;avatarUrl?:string;team?:{label?:string};nationality?:{label?:string};position?:{shortLabel?:string;label?:string};stats?:Record<string,{value:number}>};
 type Row={id:number;name:string;club:string;league:string;nationality:string;position:string;overall:number;pace?:number;shooting?:number;passing?:number;dribbling?:number;defending?:number;physical?:number;avatarUrl?:string};
 
-const EA_URL="https://drop-api.ea.com/rating/ea-sports-fc";
+const EA_URL="/api/ea-ratings";
 
 export default function Scouting(){
  const s=createClient(),router=useRouter();
@@ -16,7 +16,7 @@ export default function Scouting(){
   setLoading(true);setMsg("");
   const {data:{user}}=await s.auth.getUser();if(!user){router.replace("/login");return}
   try{
-   const r=await fetch(`${EA_URL}?locale=tr&limit=100&offset=${next}`);
+   const r=await fetch(`${EA_URL}?offset=${next}`);
    if(!r.ok)throw new Error("EA Ratings isteği başarısız.");
    const j=await r.json();const raw:EAPlayer[]=Array.isArray(j)?j:(j.items||j.results||j.players||[]);
    setRows(raw.map(x=>({id:x.id,name:x.commonName||[x.firstName,x.lastName].filter(Boolean).join(" "),club:x.team?.label||"—",league:x.leagueName||"—",nationality:x.nationality?.label||"—",position:x.position?.shortLabel||x.position?.label||"—",overall:x.overallRating,pace:x.stats?.pac?.value,shooting:x.stats?.sho?.value,passing:x.stats?.pas?.value,dribbling:x.stats?.dri?.value,defending:x.stats?.def?.value,physical:x.stats?.phy?.value,avatarUrl:x.avatarUrl})));
