@@ -13,7 +13,7 @@ const PAGE_SIZE=100,TOTAL=19789;
 export default function Scouting(){
  const s=createClient(),router=useRouter();
  const [rows,setRows]=useState<Row[]>([]),[q,setQ]=useState(""),[pos,setPos]=useState(""),[min,setMin]=useState(""),[msg,setMsg]=useState(""),[offset,setOffset]=useState(0),[loading,setLoading]=useState(true);
- const [gender,setGender]=useState(""),[league,setLeague]=useState(""),[country,setCountry]=useState(""),[playStyle,setPlayStyle]=useState(""),[sort,setSort]=useState("rank");
+ const [gender,setGender]=useState(""),[league,setLeague]=useState(""),[country,setCountry]=useState(""),[sort,setSort]=useState("overall");
  async function load(next=0, search=q.trim()){
   setLoading(true);setMsg("");
   const {data:{user}}=await s.auth.getUser();if(!user){router.replace("/login");return}
@@ -31,11 +31,10 @@ export default function Scouting(){
   finally{setLoading(false)}
  }
  useEffect(()=>{load(0)},[]);
- const filtered=useMemo(()=>rows.filter(x=>(!gender||x.gender===gender)&&(!league||x.league===league)&&(!pos||x.position===pos||x.alternatePositions.includes(pos))&&(!country||x.nationality===country)&&(!playStyle||x.playStyles.includes(playStyle))&&(!min||x.overall>=Number(min))),[rows,gender,league,pos,country,playStyle,min]);
- const list=useMemo(()=>[...filtered].sort((a,b)=>{const key=sort==="overall"?"overall":sort==="pace"?"pace":sort==="shooting"?"shooting":sort==="passing"?"passing":sort==="dribbling"?"dribbling":sort==="defending"?"defending":sort==="physical"?"physical":"rank";return Number((b as any)[key]??-1)-Number((a as any)[key]??-1)}),[filtered,sort]);
+ const filtered=useMemo(()=>rows.filter(x=>(!gender||x.gender===gender)&&(!league||x.league===league)&&(!pos||x.position===pos||x.alternatePositions.includes(pos))&&(!country||x.nationality===country)&&(!min||x.overall>=Number(min))),[rows,gender,league,pos,country,min]);
+ const list=useMemo(()=>[...filtered].sort((a,b)=>{const key=sort==="age"?"age":sort==="estimatedValue"?"estimatedValue":"overall";return Number((b as any)[key]??-1)-Number((a as any)[key]??-1)}),[filtered,sort]);
  const leagues=Array.from(new Set(rows.map(x=>x.league))).filter(x=>x&&x!=="—").sort();
  const countries=Array.from(new Set(rows.map(x=>x.nationality))).filter(x=>x&&x!=="—").sort();
- const playStyles=Array.from(new Set(rows.flatMap(x=>x.playStyles))).filter(Boolean).sort();
  const page=Math.floor(offset/PAGE_SIZE)+1,totalPages=Math.ceil(TOTAL/PAGE_SIZE);
  const positions=Array.from(new Set(rows.flatMap(x=>[x.position,...x.alternatePositions]))).filter(Boolean);
  async function syncEA(){setLoading(true);setMsg("EA verileri Supabase’e senkronize ediliyor…");const {data:{session}}=await s.auth.getSession();if(!session){router.replace("/login");return}try{const r=await fetch("/api/ea-sync",{method:"POST",headers:{Authorization:`Bearer ${session.access_token}`}});const j=await r.json();if(!r.ok)throw new Error(j.error||"Senkronizasyon başarısız.");setMsg(`${j.synced?.toLocaleString("tr-TR")||0} oyuncu Supabase’e senkronize edildi.`)}catch(e){setMsg(e instanceof Error?e.message:"Senkronizasyon başarısız.")}finally{setLoading(false)}}
@@ -48,9 +47,8 @@ export default function Scouting(){
    <label>Ligler ve Takımlar<select value={league} onChange={e=>setLeague(e.target.value)} style={input}><option value="">Tüm Ligler</option>{leagues.map(x=><option key={x}>{x}</option>)}</select></label>
    <label>Konum<select value={pos} onChange={e=>setPos(e.target.value)} style={input}><option value="">Tüm Konumlar</option>{positions.map(x=><option key={x}>{x}</option>)}</select></label>
    <label>Ülke<select value={country} onChange={e=>setCountry(e.target.value)} style={input}><option value="">Tüm Ülkeler</option>{countries.map(x=><option key={x}>{x}</option>)}</select></label>
-   <label>OyunTarzları<select value={playStyle} onChange={e=>setPlayStyle(e.target.value)} style={input}><option value="">Tüm OyunTarzları</option>{playStyles.map(x=><option key={x}>{x}</option>)}</select></label>
-   <label>Sıralama Ölçütü<select value={sort} onChange={e=>setSort(e.target.value)} style={input}><option value="rank">Sıra</option><option value="overall">Genel</option><option value="pace">Hız</option><option value="shooting">Şut</option><option value="passing">Pas</option><option value="dribbling">Dribbling</option><option value="defending">Defans</option><option value="physical">Fizik Gücü</option></select></label>
-   </div><div className="scoutAdvancedActions"><button onClick={()=>{setGender("");setLeague("");setPos("");setCountry("");setPlayStyle("");setMin("");setSort("rank")}} style={navButton}>Filtreleri Sıfırla</button><button onClick={()=>load(0,q.trim())} style={button}>Filtreleri Uygula</button></div></details><p style={{color:"#9bcba7"}}>{msg}</p>
+   <label>Sıralama Ölçütü<select value={sort} onChange={e=>setSort(e.target.value)} style={input}><option value="overall">Genel</option><option value="age">Yaş</option><option value="estimatedValue">Değer</option></select></label>
+   </div><div className="scoutAdvancedActions"><button onClick={()=>{setGender("");setLeague("");setPos("");setCountry("");setMin("");setSort("overall")}} style={navButton}>Filtreleri Sıfırla</button><button onClick={()=>load(0,q.trim())} style={button}>Filtreleri Uygula</button></div></details><p style={{color:"#9bcba7"}}>{msg}</p>
   {loading?<div style={empty}>EA Ratings yükleniyor…</div>:<div style={{display:"grid",gap:10}}>{list.map(x=><div className="scoutRow" key={x.id}>
    <div style={{display:"flex",alignItems:"center",gap:10}}>{x.avatarUrl&&<img src={x.avatarUrl} alt="" width={48} height={48} style={{objectFit:"contain"}}/>}<div><b>{x.name}</b><small style={{display:"block",color:"#aab7af"}}>{x.club} • {x.league}</small></div></div><span><b>{x.position}</b>{x.alternatePositions.length>0&&<small style={{display:"block",color:"#7f9187",marginTop:3}}>Alt: {x.alternatePositions.join(" · ")}</small>}</span><strong style={{fontSize:22,color:"#49ad60"}}>{x.overall}</strong><Stat n="YAŞ" v={x.age}/><span style={{textAlign:"center"}}><small style={{display:"block",color:"#718078"}}>DEĞER</small><b>{x.estimatedValue!=null?formatValue(x.estimatedValue):"—"}</b></span><Stat n="PAC" v={x.pace}/><Stat n="SHO" v={x.shooting}/><Stat n="PAS" v={x.passing}/><Stat n="DRI" v={x.dribbling}/><Stat n="DEF" v={x.defending}/><Stat n="PHY" v={x.physical}/><button onClick={()=>shortlist(x)} style={button}>Shortlist</button>
   </div>)}{!list.length&&<div style={empty}>Bu filtrelerle oyuncu bulunamadı.</div>}</div>}
