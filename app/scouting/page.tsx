@@ -8,6 +8,7 @@ type EAPlayer={id:number;overallRating:number;firstName:string;lastName:string;c
 type Row={id:number;name:string;club:string;league:string;nationality:string;position:string;overall:number;pace?:number;shooting?:number;passing?:number;dribbling?:number;defending?:number;physical?:number;avatarUrl?:string};
 
 const EA_URL="/api/ea-ratings";
+const PAGE_SIZE=100,TOTAL=19789;
 
 export default function Scouting(){
  const s=createClient(),router=useRouter();
@@ -25,7 +26,8 @@ export default function Scouting(){
   finally{setLoading(false)}
  }
  useEffect(()=>{load(0)},[]);
- const list=useMemo(()=>rows.filter(x=>(!q||[x.name,x.club,x.league,x.nationality].some(v=>v.toLowerCase().includes(q.toLowerCase())))&&(!pos||x.position===pos)&&(!min||x.overall>=Number(min))),[rows,q,pos,min]);
+ const list=useMemo(()=>rows.filter(x=>(!pos||x.position===pos)&&(!min||x.overall>=Number(min))),[rows,pos,min]);
+ const page=Math.floor(offset/PAGE_SIZE)+1,totalPages=Math.ceil(TOTAL/PAGE_SIZE);
  const positions=Array.from(new Set(rows.map(x=>x.position))).filter(Boolean);
  async function syncEA(){setLoading(true);setMsg("EA verileri Supabase’e senkronize ediliyor…");const {data:{session}}=await s.auth.getSession();if(!session){router.replace("/login");return}try{const r=await fetch("/api/ea-sync",{method:"POST",headers:{Authorization:`Bearer ${session.access_token}`}});const j=await r.json();if(!r.ok)throw new Error(j.error||"Senkronizasyon başarısız.");setMsg(`${j.synced?.toLocaleString("tr-TR")||0} oyuncu Supabase’e senkronize edildi.`)}catch(e){setMsg(e instanceof Error?e.message:"Senkronizasyon başarısız.")}finally{setLoading(false)}}
  async function shortlist(x:Row){const {data:{user}}=await s.auth.getUser();if(!user)return;const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).limit(1).maybeSingle();if(!m)return;const {error}=await s.from("transfer_targets").insert({club_id:m.club_id,name:x.name,position:x.position,current_club:x.club,market_value:0,rating:x.overall/10,priority:"medium",notes:"EA SPORTS FC Ratings görünümünden shortlist'e eklendi"});setMsg(error?error.message:x.name+" shortlist'e eklendi.")}
