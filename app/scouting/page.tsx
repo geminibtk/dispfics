@@ -8,7 +8,7 @@ type EAPlayer={id:number;overallRating:number;firstName:string;lastName:string;c
 type Row={id:number;name:string;club:string;league:string;nationality:string;position:string;overall:number;pace?:number;shooting?:number;passing?:number;dribbling?:number;defending?:number;physical?:number;avatarUrl?:string;age?:number;estimatedValue?:number;alternatePositions:string[];gender?:string;playStyles:string[];rank?:number};
 
 const EA_URL="/api/ea-ratings";
-const PAGE_SIZE=200,TOTAL=19789;
+const PAGE_SIZE=200,TOTAL=19789; // global DB filtering and sorting
 
 export default function Scouting(){
  const s=createClient(),router=useRouter();
