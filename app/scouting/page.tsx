@@ -12,7 +12,8 @@ const PAGE_SIZE=100,TOTAL=19789;
 
 export default function Scouting(){
  const s=createClient(),router=useRouter();
- const [rows,setRows]=useState<Row[]>([]),[q,setQ]=useState(""),[pos,setPos]=useState(""),[min,setMin]=useState(""),[msg,setMsg]=useState(""),[offset,setOffset]=useState(0),[loading,setLoading]=useState(true);\n const [gender,setGender]=useState(""),[league,setLeague]=useState(""),[country,setCountry]=useState(""),[playStyle,setPlayStyle]=useState(""),[sort,setSort]=useState("rank");
+ const [rows,setRows]=useState<Row[]>([]),[q,setQ]=useState(""),[pos,setPos]=useState(""),[min,setMin]=useState(""),[msg,setMsg]=useState(""),[offset,setOffset]=useState(0),[loading,setLoading]=useState(true);
+ const [gender,setGender]=useState(""),[league,setLeague]=useState(""),[country,setCountry]=useState(""),[playStyle,setPlayStyle]=useState(""),[sort,setSort]=useState("rank");
  async function load(next=0, search=q.trim()){
   setLoading(true);setMsg("");
   const {data:{user}}=await s.auth.getUser();if(!user){router.replace("/login");return}
