@@ -13,7 +13,7 @@ const PAGE_SIZE=100,TOTAL=19789;
 export default function Scouting(){
  const s=createClient(),router=useRouter();
  const [rows,setRows]=useState<Row[]>([]),[q,setQ]=useState(""),[pos,setPos]=useState(""),[min,setMin]=useState(""),[msg,setMsg]=useState(""),[offset,setOffset]=useState(0),[loading,setLoading]=useState(true);
- const [gender,setGender]=useState(""),[league,setLeague]=useState(""),[country,setCountry]=useState(""),[sort,setSort]=useState("overall");
+ const [gender,setGender]=useState(""),[league,setLeague]=useState(""),[country,setCountry]=useState(""),[sort,setSort]=useState("overall"),[maxOverall,setMaxOverall]=useState(""),[minAge,setMinAge]=useState(""),[maxAge,setMaxAge]=useState(""),[minValue,setMinValue]=useState(""),[maxValue,setMaxValue]=useState("");
  async function load(next=0, search=q.trim()){
   setLoading(true);setMsg("");
   const {data:{user}}=await s.auth.getUser();if(!user){router.replace("/login");return}
@@ -31,7 +31,7 @@ export default function Scouting(){
   finally{setLoading(false)}
  }
  useEffect(()=>{load(0)},[]);
- const filtered=useMemo(()=>rows.filter(x=>(!gender||x.gender===gender)&&(!league||x.league===league)&&(!pos||x.position===pos||x.alternatePositions.includes(pos))&&(!country||x.nationality===country)&&(!min||x.overall>=Number(min))),[rows,gender,league,pos,country,min]);
+ const filtered=useMemo(()=>rows.filter(x=>(!gender||x.gender===gender)&&(!league||x.league===league)&&(!pos||x.position===pos||x.alternatePositions.includes(pos))&&(!country||x.nationality===country)&&(!min||x.overall>=Number(min))&&(!maxOverall||x.overall<=Number(maxOverall))&&(!minAge||Number(x.age)>=Number(minAge))&&(!maxAge||Number(x.age)<=Number(maxAge))&&(!minValue||Number(x.estimatedValue)>=Number(minValue)*1000000)&&(!maxValue||Number(x.estimatedValue)<=Number(maxValue)*1000000)),[rows,gender,league,pos,country,min,maxOverall,minAge,maxAge,minValue,maxValue]);
  const list=useMemo(()=>[...filtered].sort((a,b)=>{const key=sort==="age"?"age":sort==="estimatedValue"?"estimatedValue":"overall";return Number((b as any)[key]??-1)-Number((a as any)[key]??-1)}),[filtered,sort]);
  const leagues=Array.from(new Set(rows.map(x=>x.league))).filter(x=>x&&x!=="—").sort();
  const countries=Array.from(new Set(rows.map(x=>x.nationality))).filter(x=>x&&x!=="—").sort();
@@ -47,8 +47,11 @@ export default function Scouting(){
    <label>Ligler ve Takımlar<select value={league} onChange={e=>setLeague(e.target.value)} style={input}><option value="">Tüm Ligler</option>{leagues.map(x=><option key={x}>{x}</option>)}</select></label>
    <label>Konum<select value={pos} onChange={e=>setPos(e.target.value)} style={input}><option value="">Tüm Konumlar</option>{positions.map(x=><option key={x}>{x}</option>)}</select></label>
    <label>Ülke<select value={country} onChange={e=>setCountry(e.target.value)} style={input}><option value="">Tüm Ülkeler</option>{countries.map(x=><option key={x}>{x}</option>)}</select></label>
+   <label>Genel (OVR)<span style={{display:"flex",gap:6}}><input type="number" min="0" max="99" placeholder="Min" value={min} onChange={e=>setMin(e.target.value)} style={input}/><input type="number" min="0" max="99" placeholder="Max" value={maxOverall} onChange={e=>setMaxOverall(e.target.value)} style={input}/></span></label>
+   <label>Yaş<span style={{display:"flex",gap:6}}><input type="number" placeholder="Min" value={minAge} onChange={e=>setMinAge(e.target.value)} style={input}/><input type="number" placeholder="Max" value={maxAge} onChange={e=>setMaxAge(e.target.value)} style={input}/></span></label>
+   <label>Değer (€ M)<span style={{display:"flex",gap:6}}><input type="number" placeholder="Min" value={minValue} onChange={e=>setMinValue(e.target.value)} style={input}/><input type="number" placeholder="Max" value={maxValue} onChange={e=>setMaxValue(e.target.value)} style={input}/></span></label>
    <label>Sıralama Ölçütü<select value={sort} onChange={e=>setSort(e.target.value)} style={input}><option value="overall">Genel</option><option value="age">Yaş</option><option value="estimatedValue">Değer</option></select></label>
-   </div><div className="scoutAdvancedActions"><button onClick={()=>{setGender("");setLeague("");setPos("");setCountry("");setMin("");setSort("overall")}} style={navButton}>Filtreleri Sıfırla</button><button onClick={()=>load(0,q.trim())} style={button}>Filtreleri Uygula</button></div></details><p style={{color:"#9bcba7"}}>{msg}</p>
+   </div><div className="scoutAdvancedActions"><button onClick={()=>{setGender("");setLeague("");setPos("");setCountry("");setMin("");setMaxOverall("");setMinAge("");setMaxAge("");setMinValue("");setMaxValue("");setSort("overall")}} style={navButton}>Filtreleri Sıfırla</button><button onClick={()=>load(0,q.trim())} style={button}>Filtreleri Uygula</button></div></details><p style={{color:"#9bcba7"}}>{msg}</p>
   {loading?<div style={empty}>EA Ratings yükleniyor…</div>:<div style={{display:"grid",gap:10}}>{list.map(x=><div className="scoutRow" key={x.id}>
    <div style={{display:"flex",alignItems:"center",gap:10}}>{x.avatarUrl&&<img src={x.avatarUrl} alt="" width={48} height={48} style={{objectFit:"contain"}}/>}<div><b>{x.name}</b><small style={{display:"block",color:"#aab7af"}}>{x.club} • {x.league}</small></div></div><span><b>{x.position}</b>{x.alternatePositions.length>0&&<small style={{display:"block",color:"#7f9187",marginTop:3}}>Alt: {x.alternatePositions.join(" · ")}</small>}</span><strong style={{fontSize:22,color:"#49ad60"}}>{x.overall}</strong><Stat n="YAŞ" v={x.age}/><span style={{textAlign:"center"}}><small style={{display:"block",color:"#718078"}}>DEĞER</small><b>{x.estimatedValue!=null?formatValue(x.estimatedValue):"—"}</b></span><Stat n="PAC" v={x.pace}/><Stat n="SHO" v={x.shooting}/><Stat n="PAS" v={x.passing}/><Stat n="DRI" v={x.dribbling}/><Stat n="DEF" v={x.defending}/><Stat n="PHY" v={x.physical}/><button onClick={()=>shortlist(x)} style={button}>Shortlist</button>
   </div>)}{!list.length&&<div style={empty}>Bu filtrelerle oyuncu bulunamadı.</div>}</div>}
