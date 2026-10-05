@@ -84,7 +84,7 @@ export async function POST(req:Request){
         skill_moves:x.skillMoves,weak_foot:x.weakFootAbility,preferred_foot:x.preferredFoot,
         avatar_url:x.avatarUrl,shield_url:x.shieldUrl,gender:x.gender,team:x.team,
         nationality_data:x.nationality,position_data:x.position,alternate_positions:x.alternatePositions||[],
-        player_abilities:x.playerAbilities||[],raw_stats:x.stats||{},source:"ea-fc27",source_url:RATINGS,last_synced_at:now
+        player_abilities:x.playerAbilities||[],raw_stats:x.stats||{},source:"ea-fc27",source_url:RATINGS,last_synced_at:now,is_active:true,archived_at:null
       };
     });
     const {error}=await s.from("scouting_players").upsert(rows,{onConflict:"external_id"});
@@ -92,6 +92,6 @@ export async function POST(req:Request){
     synced+=rows.length;
     if(items.length<100)break;
   }
-  if(synced!==19789)return NextResponse.json({error:`Eksik FC27 sync: ${synced}/19789`,synced},{status:502});
+  if(synced!==19789)return NextResponse.json({error:`Eksik FC27 sync: ${synced}/19789`,synced},{status:502});\n  const archivedAt=new Date().toISOString();\n  const {error:archiveError}=await s.from("scouting_players").update({is_active:false,archived_at:archivedAt}).neq("source","ea-fc27").eq("is_active",true);\n  if(archiveError)return NextResponse.json({error:archiveError.message,synced},{status:500});
   return NextResponse.json({ok:true,synced,total:ctx.total,release:"FC27",databaseRowsPreserved:true,physicalDataPreserved:true});
 }
