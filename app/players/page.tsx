@@ -1,12 +1,34 @@
 "use client";
-import {useEffect,useState} from "react";import {useRouter} from "next/navigation";import {createClient} from "../../lib/supabase";
+import {useEffect,useMemo,useState} from "react";
+import {useRouter} from "next/navigation";
+import {createClient} from "../../lib/supabase";
 import AppShell from "../components/AppShell";
-type Player={id:string;name:string;position:string;age:number|null;rating:number;form?:number;market_value:number;source?:string};
-export default function Players(){const s=createClient();const router=useRouter();const [club,setClub]=useState<string|null>(null);const [players,setPlayers]=useState<Player[]>([]);const [msg,setMsg]=useState("");const [form,setForm]=useState({name:"",position:"",age:"",rating:"",market_value:""});
-async function load(){const {data:{user}}=await s.auth.getUser();if(!user){router.push("/login");return}const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(!m){router.push("/onboarding");return}setClub(m.club_id);const {data:c}=await s.from("clubs").select("name").eq("id",m.club_id).maybeSingle();const {data,error}=await s.from("scouting_players").select("id,name,position,age,overall,estimated_value_eur").eq("is_active",true).eq("club",c?.name||"").order("overall",{ascending:false});if(error)setMsg(error.message);else setPlayers((data||[]).map((p:any)=>({id:p.id,name:p.name,position:p.position,age:p.age,rating:Number(p.overall||0),market_value:Number(p.estimated_value_eur||0),source:"scouting"})))}
-useEffect(()=>{load()},[]);
-async function add(e:React.FormEvent){e.preventDefault();if(!club)return;const {error}=await s.from("players").insert({club_id:club,name:form.name,position:form.position,age:form.age?Number(form.age):null,rating:form.rating?Number(form.rating):0,market_value:form.market_value?Number(form.market_value):0});if(error)return setMsg(error.message);setForm({name:"",position:"",age:"",rating:"",market_value:""});setMsg("Oyuncu eklendi.");load()}
-async function edit(p:Player){const name=prompt("Oyuncu adı",p.name);if(!name)return;const position=prompt("Pozisyon",p.position);if(!position)return;const age=prompt("Yaş",String(p.age??""));const rating=prompt("Reyting",String(p.rating));const market=prompt("Piyasa değeri",String(p.market_value));const {error}=await s.from("players").update({name,position,age:age?Number(age):null,rating:rating?Number(rating):0,market_value:market?Number(market):0}).eq("id",p.id);if(error)setMsg(error.message);else load()}
-async function remove(id:string){if(!confirm("Oyuncu silinsin mi?"))return;const {error}=await s.from("players").delete().eq("id",id);if(error)setMsg(error.message);else load()}
-return <AppShell title="Oyuncular"><div style={{maxWidth:1100}}><small style={{color:"#49ad60"}}>DISPFICS • CANLI VERİ</small><form onSubmit={add} style={{display:"none"}}><input required placeholder="Oyuncu adı" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={input}/><input required placeholder="Pozisyon" value={form.position} onChange={e=>setForm({...form,position:e.target.value})} style={input}/><input type="number" placeholder="Yaş" value={form.age} onChange={e=>setForm({...form,age:e.target.value})} style={input}/><input type="number" step=".1" min="0" max="10" placeholder="Reyting" value={form.rating} onChange={e=>setForm({...form,rating:e.target.value})} style={input}/><input type="number" placeholder="Değer ₺" value={form.market_value} onChange={e=>setForm({...form,market_value:e.target.value})} style={input}/><button style={primary}>Ekle</button></form><p style={{color:"#9bcba7"}}>{msg}</p><div style={{border:"1px solid #203027",borderRadius:14,overflow:"hidden"}}>{players.length===0?<p style={{padding:24,color:"#aab7af"}}>Kulübün aktif oyuncu kadrosu bulunamadı.</p>:players.map(p=><div key={p.id} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr auto",gap:10,alignItems:"center",padding:"16px",borderBottom:"1px solid #203027"}}><b>{p.name}</b><span>{p.position}</span><span>{p.age??"—"} yaş</span><span>{Number(p.rating).toFixed(1)}</span><span>€{Number(p.market_value).toLocaleString("tr-TR")}</span><div style={{display:"flex",gap:6}}><button onClick={()=>router.push(`/scouting/${p.id}`)} style={ghost}>Detay</button></div></div>)}</div></div></AppShell>}
-const input={padding:11,background:"#0e1512",color:"white",border:"1px solid #294032",borderRadius:8,minWidth:0};const primary={padding:"11px 18px",background:"#2e9d4b",color:"white",border:0,borderRadius:8,fontWeight:700};const ghost={padding:"9px 12px",background:"transparent",color:"#9bcba7",border:"1px solid #294032",borderRadius:8,cursor:"pointer"};
+
+type Player={id:string;name:string;position:string;age:number|null;rating:number;market_value:number;avatar_url?:string|null};
+export default function Players(){
+ const s=createClient(),router=useRouter();
+ const [clubName,setClubName]=useState("");const [players,setPlayers]=useState<Player[]>([]);const [msg,setMsg]=useState("");const [loading,setLoading]=useState(true);
+ async function load(){
+  const {data:{user}}=await s.auth.getUser();if(!user){router.push("/login");return}
+  const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(!m){router.push("/onboarding");return}
+  const {data:c}=await s.from("clubs").select("name").eq("id",m.club_id).maybeSingle();const name=c?.name||"";setClubName(name);
+  const {data,error}=await s.from("scouting_players").select("id,name,position,age,overall,estimated_value_eur,avatar_url").eq("is_active",true).eq("club",name).order("overall",{ascending:false});
+  if(error)setMsg(error.message);else setPlayers((data||[]).map((p:any)=>({id:p.id,name:p.name,position:p.position,age:p.age,rating:Number(p.overall||0),market_value:Number(p.estimated_value_eur||0),avatar_url:p.avatar_url})));
+  setLoading(false)
+ }
+ useEffect(()=>{load()},[]);
+ const total=useMemo(()=>players.reduce((a,p)=>a+p.market_value,0),[players]);
+ const avg=useMemo(()=>players.length?players.reduce((a,p)=>a+p.rating,0)/players.length:0,[players]);
+ return <AppShell title="Oyuncular"><div className="clubSquadPage">
+  <section className="clubSquadHero"><div><small>PROFESYONEL KADRO</small><h2>{clubName||"Kulübünüz"}</h2><p>Aktif A takım kadrosu • Dispfics canlı oyuncu verisi</p></div><div className="clubSquadMetrics"><div><strong>{players.length}</strong><span>Oyuncu</span></div><div><strong>{avg.toFixed(1)}</strong><span>Ort. Reyting</span></div><div><strong>{money(total)}</strong><span>Kadro Değeri</span></div></div></section>
+  {msg&&<p style={{color:"#9bcba7"}}>{msg}</p>}
+  <section className="clubSquadPanel"><div className="clubSquadHead"><div><small>KADRO</small><h3>Beşiktaş Oyuncuları</h3></div><span>{loading?"Yükleniyor…":players.length+" oyuncu"}</span></div>
+   <div className="clubSquadLabels"><span>OYUNCU</span><span>POZİSYON</span><span>YAŞ</span><span>DISPFICS REYTİNG</span><span>DEĞER</span><span></span></div>
+   <div className="clubSquadList">{!loading&&players.length===0?<p className="clubSquadEmpty">Kulübün aktif oyuncu kadrosu bulunamadı.</p>:players.map(p=><button key={p.id} onClick={()=>router.push(`/scouting/${p.id}`)} className="clubSquadRow">
+    <span className="clubSquadPlayer">{p.avatar_url?<img src={p.avatar_url} alt=""/>:<i>{initials(p.name)}</i>}<b>{p.name}</b></span><span>{p.position||"—"}</span><span>{p.age??"—"}</span><strong>{p.rating.toFixed(0)}</strong><span>{money(p.market_value)}</span><em>Detay →</em>
+   </button>)}</div>
+  </section>
+ </div></AppShell>
+}
+function money(n:number){if(n>=1e9)return "€"+(n/1e9).toFixed(1)+"B";if(n>=1e6)return "€"+(n/1e6).toFixed(1)+"M";if(n>=1e3)return "€"+(n/1e3).toFixed(0)+"K";return "€"+n.toLocaleString("tr-TR")}
+function initials(n:string){return n.split(" ").slice(0,2).map(x=>x[0]).join("").toUpperCase()}
