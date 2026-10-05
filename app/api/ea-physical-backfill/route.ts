@@ -95,5 +95,5 @@ export async function POST(req:Request){
   if(error)return NextResponse.json({error:error.message,matched,updated},{status:500});
   matched++;updated++;
  }
- return NextResponse.json({ok:true,legacyTotal:legacy.length,currentTotal:current.length,audit:{exactId,nameDobDifferentId,nameDobAmbiguous,fc27Only,legacyOnly,matchedLegacy:matchedLegacyIds.size},missingBefore:missing.length,matched,updated,ambiguous,unmatched,matching:"exact external_id audit; then normalized name + exact birthdate unique candidate"});
+ const result={ok:true,legacyTotal:legacy.length,currentTotal:current.length,audit:{exactId,nameDobDifferentId,nameDobAmbiguous,fc27Only,legacyOnly,matchedLegacy:matchedLegacyIds.size},missingBefore:missing.length,matched,updated,ambiguous,unmatched,matching:"exact external_id audit; then normalized name + exact birthdate unique candidate"};\n console.log("[EA_ROSTER_AUDIT]",JSON.stringify(result));\n return NextResponse.json(result);
 }
