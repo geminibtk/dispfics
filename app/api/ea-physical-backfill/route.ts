@@ -10,7 +10,11 @@ function norm(v:string){
  return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
   .replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ");
 }
-function names(x:any){return Array.from(new Set([x.commonName,[x.firstName,x.lastName].filter(Boolean).join(" "),x.name].map(norm).filter(Boolean)))}
+function names(x:any){return Array.from(new Set([
+ x.commonName,x.common_name,
+ [x.firstName||x.first_name,x.lastName||x.last_name].filter(Boolean).join(" "),
+ x.name
+].map(norm).filter(Boolean)))}
 async function page(offset:number){
  for(let attempt=0;attempt<4;attempt++){
   const r=await fetch(`${EA}?locale=tr&limit=100&offset=${offset}`,{headers:H,cache:"no-store"});
@@ -33,15 +37,21 @@ export async function POST(req:Request){
  if(!membership||!["owner","admin"].includes(String(membership.role||"").toLowerCase()))
   return NextResponse.json({error:"Bu işlem yalnızca kulüp sahibi veya yönetici tarafından çalıştırılabilir."},{status:403});
 
- const legacy:any[]=[];
- let total=0;
- for(let offset=0;;offset+=100){
-  const r=await page(offset);
-  if(!r.ok)return NextResponse.json({error:`Legacy EA ${r.status}`,offset},{status:502});
-  const j=await r.json(); const items=j.items||[];
-  if(offset===0){total=Number(j.totalItems)||0;if(total!==17873)return NextResponse.json({error:`Beklenen legacy toplamı 17873, EA ${total} döndürdü`},{status:502});}
-  legacy.push(...items);
-  if(legacy.length>=total||items.length<100)break;
+ const first=await page(0);
+ if(!first.ok)return NextResponse.json({error:`Legacy EA ${first.status}`,offset:0},{status:502});
+ const firstJson=await first.json();
+ const total=Number(firstJson.totalItems)||0;
+ if(total!==17873)return NextResponse.json({error:`Beklenen legacy toplamı 17873, EA ${total} döndürdü`},{status:502});
+ const legacy:any[]=[...(firstJson.items||[])];
+ const offsets=Array.from({length:Math.ceil(total/100)-1},(_,i)=>(i+1)*100);
+ for(let i=0;i<offsets.length;i+=10){
+  const batch=offsets.slice(i,i+10);
+  const responses=await Promise.all(batch.map(async offset=>{
+   const r=await page(offset);
+   if(!r.ok)throw new Error(`Legacy EA ${r.status} at ${offset}`);
+   return r.json();
+  }));
+  for(const j of responses)legacy.push(...(j.items||[]));
  }
  const byKey=new Map<string,any[]>();
  for(const x of legacy){
