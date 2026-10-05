@@ -18,7 +18,7 @@ export default function Scouting(){
   setLoading(true);setMsg("");
   const {data:{user}}=await s.auth.getUser();if(!user){router.replace("/login");return}
   try{
-   let query=s.from("scouting_players").select("external_id,name,club,league,nationality,position,overall,pace,shooting,passing,dribbling,defending,physical,avatar_url,age,estimated_value_eur,alternate_positions,gender,player_abilities,rank",{count:"exact"});
+   let query=s.from("scouting_players").select("external_id,name,club,league,nationality,position,overall,pace,shooting,passing,dribbling,defending,physical,avatar_url,age,estimated_value_eur,alternate_positions,gender,player_abilities,rank",{count:"exact"}).eq("is_active",true);
    if(search)query=query.or(`name.ilike.%${search}%,club.ilike.%${search}%,nationality.ilike.%${search}%`);
    if(gender)query=query.contains("gender",{label:gender});
    if(league)query=query.eq("league",league);
@@ -46,7 +46,7 @@ export default function Scouting(){
   }catch(e){setRows([]);setMsg(e instanceof Error?e.message:"Oyuncular yüklenemedi.");}
   finally{setLoading(false)}
  }
- useEffect(()=>{load(0);(async()=>{const {data}=await s.from("scouting_players").select("nationality,league,position,alternate_positions");if(data){setAllCountries(Array.from(new Set(data.map((x:any)=>x.nationality).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"tr")));setAllLeagues(Array.from(new Set(data.map((x:any)=>x.league).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"tr")));setAllPositions(Array.from(new Set(data.flatMap((x:any)=>[x.position,...(Array.isArray(x.alternate_positions)?x.alternate_positions.map((p:any)=>p?.shortLabel||p?.label):[])].filter(Boolean)))).sort((a,b)=>a.localeCompare(b,"tr")))}})()},[]);
+ useEffect(()=>{load(0);(async()=>{const {data}=await s.from("scouting_players").select("nationality,league,position,alternate_positions").eq("is_active",true);if(data){setAllCountries(Array.from(new Set(data.map((x:any)=>x.nationality).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"tr")));setAllLeagues(Array.from(new Set(data.map((x:any)=>x.league).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"tr")));setAllPositions(Array.from(new Set(data.flatMap((x:any)=>[x.position,...(Array.isArray(x.alternate_positions)?x.alternate_positions.map((p:any)=>p?.shortLabel||p?.label):[])].filter(Boolean)))).sort((a,b)=>a.localeCompare(b,"tr")))}})()},[]);
  const list=rows;
  const leagues=allLeagues;
  const countries=allCountries;
