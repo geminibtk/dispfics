@@ -40,6 +40,6 @@ export default function Players(){
  </div></AppShell>
 }
 function Metric({t,v,s}:{t:string;v:string;s:string}){return <div><small>{t}</small><strong>{v}</strong><span>{s}</span></div>}
-function Source({p}:{p:Profile|null}){return p?.source_url?<p className="clubSource"><a href={p.source_url} target="_blank" rel="noreferrer">Kulüp bilgileri kaynağı ↗</a></p>:null}
+function Source({p}:{p:Profile|null}){return p?.source?<p className="clubSource">Kulüp bilgileri doğrulanmış dış kaynak verileriyle desteklenmektedir.</p>:null}
 function money(n:number){if(n>=1e9)return "€"+(n/1e9).toFixed(1)+"B";if(n>=1e6)return "€"+(n/1e6).toFixed(1)+"M";if(n>=1e3)return "€"+(n/1e3).toFixed(0)+"K";return "€"+n.toLocaleString("tr-TR")}
 function initials(n:string){return n.split(" ").slice(0,2).map(x=>x[0]).join("").toUpperCase()}
