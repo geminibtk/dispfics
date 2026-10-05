@@ -64,14 +64,14 @@ export async function POST(req:Request){
  }
  let missing:any[]=[]; let from=0;
  while(true){
-  const {data,error}=await s.from("scouting_players").select("id,external_id,name,first_name,last_name,common_name,birthdate,club").eq("is_active",true).is("height",null).is("weight",null).range(from,from+999);
+  const {data,error}=await s.from("scouting_players").select("id,external_id,name,first_name,last_name,common_name,birthdate,club").eq("is_active",true).is("height",null).is("weight",null).order("external_id",{ascending:true}).range(from,from+999);
   if(error)return NextResponse.json({error:error.message},{status:500});
   missing.push(...(data||[])); if(!data||data.length<1000)break; from+=1000;
  }
  // Full roster audit: exact EA ID first, then unique normalized name + exact birthdate.
  let current:any[]=[]; let auditFrom=0;
  while(true){
-  const {data,error}=await s.from("scouting_players").select("external_id,name,first_name,last_name,common_name,birthdate").eq("is_active",true).range(auditFrom,auditFrom+999);
+  const {data,error}=await s.from("scouting_players").select("external_id,name,first_name,last_name,common_name,birthdate").eq("is_active",true).order("external_id",{ascending:true}).range(auditFrom,auditFrom+999);
   if(error)return NextResponse.json({error:error.message},{status:500});
   current.push(...(data||[])); if(!data||data.length<1000)break; auditFrom+=1000;
  }
