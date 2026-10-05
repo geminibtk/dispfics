@@ -10,7 +10,7 @@ function norm(v:string){
  return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
   .replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ");
 }
-function names(x:any){return [...new Set([x.commonName,[x.firstName,x.lastName].filter(Boolean).join(" "),x.name].map(norm).filter(Boolean))]}
+function names(x:any){return Array.from(new Set([x.commonName,[x.firstName,x.lastName].filter(Boolean).join(" "),x.name].map(norm).filter(Boolean)))}
 async function page(offset:number){
  for(let attempt=0;attempt<4;attempt++){
   const r=await fetch(`${EA}?locale=tr&limit=100&offset=${offset}`,{headers:H,cache:"no-store"});
@@ -58,7 +58,7 @@ export async function POST(req:Request){
  let matched=0,ambiguous=0,unmatched=0,updated=0;
  for(const p of missing){
   const keys=names(p).map(n=>`${p.birthdate}|${n}`);
-  const candidates=[...new Map(keys.flatMap(k=>byKey.get(k)||[]).map((x:any)=>[String(x.id),x])).values()];
+  const candidates=Array.from(new Map(keys.reduce((all:any[],k)=>all.concat(byKey.get(k)||[]),[]).map((x:any)=>[String(x.id),x])).values());
   if(candidates.length!==1){candidates.length>1?ambiguous++:unmatched++;continue;}
   const x:any=candidates[0];
   const {error}=await s.from("scouting_players").update({height:Number(x.height),weight:Number(x.weight)}).eq("id",p.id).is("height",null).is("weight",null);
