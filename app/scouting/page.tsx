@@ -9,6 +9,16 @@ type Row={id:number;name:string;club:string;league:string;nationality:string;pos
 
 const EA_URL="/api/ea-ratings";
 const PAGE_SIZE=200,TOTAL=19789; // global DB filtering and sorting
+function searchVariants(value:string){
+ const raw=value.trim();
+ if(!raw)return [];
+ const ascii=raw.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/İ/g,"I").replace(/ş/g,"s").replace(/Ş/g,"S").replace(/ğ/g,"g").replace(/Ğ/g,"G").replace(/ü/g,"u").replace(/Ü/g,"U").replace(/ö/g,"o").replace(/Ö/g,"O").replace(/ç/g,"c").replace(/Ç/g,"C");
+ const map:Record<string,string[]>= {c:["c","ç"],g:["g","ğ"],i:["i","ı","İ"],o:["o","ö"],s:["s","ş"],u:["u","ü"]};
+ const chars=[...ascii.toLocaleLowerCase("tr-TR")];
+ let variants=[""];
+ for(const ch of chars){const choices=map[ch]||[ch];variants=variants.flatMap(prefix=>choices.map(x=>prefix+x));if(variants.length>128)break}
+ return Array.from(new Set([raw,ascii,...variants])).slice(0,128);
+}
 
 export default function Scouting(){
  const s=createClient(),router=useRouter();
@@ -19,7 +29,11 @@ export default function Scouting(){
   const {data:{user}}=await s.auth.getUser();if(!user){router.replace("/login");return}
   try{
    let query=s.from("scouting_players").select("external_id,name,club,league,nationality,position,overall,pace,shooting,passing,dribbling,defending,physical,avatar_url,age,estimated_value_eur,alternate_positions,gender,player_abilities,rank",{count:"exact"}).eq("is_active",true);
-   if(search)query=query.or(`name.ilike.%${search}%,club.ilike.%${search}%,nationality.ilike.%${search}%`);
+   if(search){
+    const safe=searchVariants(search).map(x=>x.replace(/[,%()]/g,"")).filter(Boolean);
+    const terms=safe.flatMap(x=>[`name.ilike.%${x}%`,`club.ilike.%${x}%`,`nationality.ilike.%${x}%`]);
+    query=query.or(terms.join(","));
+   }
    if(gender)query=query.contains("gender",{label:gender});
    if(league)query=query.eq("league",league);
    if(country)query=query.eq("nationality",country);
