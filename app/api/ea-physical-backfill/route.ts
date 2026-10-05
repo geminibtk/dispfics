@@ -65,6 +65,26 @@ export async function POST(req:Request){
   if(error)return NextResponse.json({error:error.message},{status:500});
   missing.push(...(data||[])); if(!data||data.length<1000)break; from+=1000;
  }
+ // Full roster audit: exact EA ID first, then unique normalized name + exact birthdate.
+ let current:any[]=[]; let auditFrom=0;
+ while(true){
+  const {data,error}=await s.from("scouting_players").select("external_id,name,first_name,last_name,common_name,birthdate").eq("is_active",true).range(auditFrom,auditFrom+999);
+  if(error)return NextResponse.json({error:error.message},{status:500});
+  current.push(...(data||[])); if(!data||data.length<1000)break; auditFrom+=1000;
+ }
+ const legacyIds=new Set(legacy.map(x=>String(x.id)));
+ const matchedLegacyIds=new Set<string>();
+ let exactId=0,nameDobDifferentId=0,nameDobAmbiguous=0,fc27Only=0;
+ for(const p of current){
+  if(legacyIds.has(String(p.external_id))){exactId++;matchedLegacyIds.add(String(p.external_id));continue;}
+  const keys=names(p).map(n=>`${p.birthdate}|${n}`);
+  const candidates=Array.from(new Map(keys.reduce((all:any[],k)=>all.concat(byKey.get(k)||[]),[]).map((x:any)=>[String(x.id),x])).values()) as any[];
+  if(candidates.length===1){nameDobDifferentId++;matchedLegacyIds.add(String(candidates[0].id));}
+  else if(candidates.length>1)nameDobAmbiguous++;
+  else fc27Only++;
+ }
+ const legacyOnly=legacy.length-matchedLegacyIds.size;
+
  let matched=0,ambiguous=0,unmatched=0,updated=0;
  for(const p of missing){
   const keys=names(p).map(n=>`${p.birthdate}|${n}`);
@@ -75,5 +95,5 @@ export async function POST(req:Request){
   if(error)return NextResponse.json({error:error.message,matched,updated},{status:500});
   matched++;updated++;
  }
- return NextResponse.json({ok:true,legacyTotal:legacy.length,missingBefore:missing.length,matched,updated,ambiguous,unmatched,matching:"normalized name + exact birthdate; unique legacy candidate only"});
+ return NextResponse.json({ok:true,legacyTotal:legacy.length,currentTotal:current.length,audit:{exactId,nameDobDifferentId,nameDobAmbiguous,fc27Only,legacyOnly,matchedLegacy:matchedLegacyIds.size},missingBefore:missing.length,matched,updated,ambiguous,unmatched,matching:"exact external_id audit; then normalized name + exact birthdate unique candidate"});
 }
