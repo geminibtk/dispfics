@@ -22,7 +22,7 @@ export default function Players(){
  return <AppShell title="Oyuncular"><div className="clubSquadPage">
   <section className="clubSquadHero"><div><small>PROFESYONEL KADRO</small><h2>{clubName||"Kulübünüz"}</h2><p>Aktif A takım kadrosu • Dispfics canlı oyuncu verisi</p></div><div className="clubSquadMetrics"><div><strong>{players.length}</strong><span>Oyuncu</span></div><div><strong>{avg.toFixed(1)}</strong><span>Ort. Reyting</span></div><div><strong>{money(total)}</strong><span>Kadro Değeri</span></div></div></section>
   {msg&&<p style={{color:"#9bcba7"}}>{msg}</p>}
-  <section className="clubSquadPanel"><div className="clubSquadHead"><div><small>KADRO</small><h3>Beşiktaş Oyuncuları</h3></div><span>{loading?"Yükleniyor…":players.length+" oyuncu"}</span></div>
+  <section className="clubSquadPanel"><div className="clubSquadHead"><div><small>KADRO</small><h3>{clubName} Oyuncuları</h3></div><span>{loading?"Yükleniyor…":players.length+" oyuncu"}</span></div>
    <div className="clubSquadLabels"><span>OYUNCU</span><span>POZİSYON</span><span>YAŞ</span><span>DISPFICS REYTİNG</span><span>DEĞER</span><span></span></div>
    <div className="clubSquadList">{!loading&&players.length===0?<p className="clubSquadEmpty">Kulübün aktif oyuncu kadrosu bulunamadı.</p>:players.map(p=><button key={p.id} onClick={()=>router.push(`/scouting/${p.id}`)} className="clubSquadRow">
     <span className="clubSquadPlayer">{p.avatar_url?<img src={p.avatar_url} alt=""/>:<i>{initials(p.name)}</i>}<b>{p.name}</b></span><span>{p.position||"—"}</span><span>{p.age??"—"}</span><strong>{p.rating.toFixed(0)}</strong><span>{money(p.market_value)}</span><em>Detay →</em>
