@@ -54,9 +54,12 @@ export async function POST(req:Request){
   for(const j of responses)legacy.push(...(j.items||[]));
  }
  const byKey=new Map<string,any[]>();
+ const byId=new Map<string,any>();
  for(const x of legacy){
   const bd=date(x.birthdate); const h=Number(x.height)||0,w=Number(x.weight)||0;
-  if(!bd||!h||!w)continue;
+  if(!h||!w)continue;
+  byId.set(String(x.id),x);
+  if(!bd)continue;
   for(const n of names(x)){const k=`${bd}|${n}`;const arr=byKey.get(k)||[];arr.push(x);byKey.set(k,arr);}
  }
  let missing:any[]=[]; let from=0;
@@ -85,17 +88,23 @@ export async function POST(req:Request){
  }
  const legacyOnly=legacy.length-matchedLegacyIds.size;
 
- let matched=0,ambiguous=0,unmatched=0,updated=0;
+ let matched=0,matchedById=0,matchedByNameDob=0,ambiguous=0,unmatched=0,updated=0;
  for(const p of missing){
-  const keys=names(p).map(n=>`${p.birthdate}|${n}`);
-  const candidates=Array.from(new Map(keys.reduce((all:any[],k)=>all.concat(byKey.get(k)||[]),[]).map((x:any)=>[String(x.id),x])).values());
-  if(candidates.length!==1){candidates.length>1?ambiguous++:unmatched++;continue;}
-  const x:any=candidates[0];
+  let x:any=byId.get(String(p.external_id));
+  if(x){
+   matchedById++;
+  }else{
+   const keys=names(p).map(n=>`${p.birthdate}|${n}`);
+   const candidates=Array.from(new Map(keys.reduce((all:any[],k)=>all.concat(byKey.get(k)||[]),[]).map((candidate:any)=>[String(candidate.id),candidate])).values());
+   if(candidates.length!==1){candidates.length>1?ambiguous++:unmatched++;continue;}
+   x=candidates[0];
+   matchedByNameDob++;
+  }
   const {error}=await s.from("scouting_players").update({height:Number(x.height),weight:Number(x.weight)}).eq("id",p.id).is("height",null).is("weight",null);
-  if(error)return NextResponse.json({error:error.message,matched,updated},{status:500});
+  if(error)return NextResponse.json({error:error.message,matched,matchedById,matchedByNameDob,updated},{status:500});
   matched++;updated++;
  }
- const result={ok:true,legacyTotal:legacy.length,currentTotal:current.length,audit:{exactId,nameDobDifferentId,nameDobAmbiguous,fc27Only,legacyOnly,matchedLegacy:matchedLegacyIds.size},missingBefore:missing.length,matched,updated,ambiguous,unmatched,matching:"exact external_id audit; then normalized name + exact birthdate unique candidate"};
+ const result={ok:true,legacyTotal:legacy.length,currentTotal:current.length,audit:{exactId,nameDobDifferentId,nameDobAmbiguous,fc27Only,legacyOnly,matchedLegacy:matchedLegacyIds.size},missingBefore:missing.length,matched,matchedById,matchedByNameDob,updated,ambiguous,unmatched,matching:"exact external_id first; then normalized name + exact birthdate unique candidate"};
  console.log("[EA_ROSTER_AUDIT]",JSON.stringify(result));
  return NextResponse.json(result);
 }
