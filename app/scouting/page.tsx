@@ -14,7 +14,7 @@ function searchVariants(value:string){
  if(!raw)return [];
  const ascii=raw.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/İ/g,"I").replace(/ş/g,"s").replace(/Ş/g,"S").replace(/ğ/g,"g").replace(/Ğ/g,"G").replace(/ü/g,"u").replace(/Ü/g,"U").replace(/ö/g,"o").replace(/Ö/g,"O").replace(/ç/g,"c").replace(/Ç/g,"C");
  const map:Record<string,string[]>= {c:["c","ç"],g:["g","ğ"],i:["i","ı","İ"],o:["o","ö"],s:["s","ş"],u:["u","ü"]};
- const chars=[...ascii.toLocaleLowerCase("tr-TR")];
+ const chars=ascii.toLocaleLowerCase("tr-TR").split("");
  let variants=[""];
  for(const ch of chars){const choices=map[ch]||[ch];variants=variants.flatMap(prefix=>choices.map(x=>prefix+x));if(variants.length>128)break}
  return Array.from(new Set([raw,ascii,...variants])).slice(0,128);
