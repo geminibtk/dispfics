@@ -92,6 +92,9 @@ export async function POST(req:Request){
     synced+=rows.length;
     if(items.length<100)break;
   }
-  if(synced!==19789)return NextResponse.json({error:`Eksik FC27 sync: ${synced}/19789`,synced},{status:502});\n  const archivedAt=new Date().toISOString();\n  const {error:archiveError}=await s.from("scouting_players").update({is_active:false,archived_at:archivedAt}).neq("source","ea-fc27").eq("is_active",true);\n  if(archiveError)return NextResponse.json({error:archiveError.message,synced},{status:500});
+  if(synced!==19789)return NextResponse.json({error:`Eksik FC27 sync: ${synced}/19789`,synced},{status:502});
+  const archivedAt=new Date().toISOString();
+  const {error:archiveError}=await s.from("scouting_players").update({is_active:false,archived_at:archivedAt}).neq("source","ea-fc27").eq("is_active",true);
+  if(archiveError)return NextResponse.json({error:archiveError.message,synced},{status:500});
   return NextResponse.json({ok:true,synced,total:ctx.total,release:"FC27",databaseRowsPreserved:true,physicalDataPreserved:true});
 }
