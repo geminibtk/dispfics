@@ -88,6 +88,14 @@ export async function POST(req:Request){
  }
  const legacyOnly=legacy.length-matchedLegacyIds.size;
 
+ let missingExactLegacyId=0,missingExactLegacyWithPhysical=0,missingExactLegacyWithoutPhysical=0;
+ for(const p of missing){
+  if(legacyIds.has(String(p.external_id))){
+   missingExactLegacyId++;
+   if(byId.has(String(p.external_id)))missingExactLegacyWithPhysical++;
+   else missingExactLegacyWithoutPhysical++;
+  }
+ }
  let matched=0,matchedById=0,matchedByNameDob=0,ambiguous=0,unmatched=0,updated=0;
  for(const p of missing){
   let x:any=byId.get(String(p.external_id));
@@ -104,7 +112,7 @@ export async function POST(req:Request){
   if(error)return NextResponse.json({error:error.message,matched,matchedById,matchedByNameDob,updated},{status:500});
   matched++;updated++;
  }
- const result={ok:true,legacyTotal:legacy.length,currentTotal:current.length,audit:{exactId,nameDobDifferentId,nameDobAmbiguous,fc27Only,legacyOnly,matchedLegacy:matchedLegacyIds.size},missingBefore:missing.length,matched,matchedById,matchedByNameDob,updated,ambiguous,unmatched,matching:"exact external_id first; then normalized name + exact birthdate unique candidate"};
+ const result={ok:true,legacyTotal:legacy.length,currentTotal:current.length,audit:{exactId,nameDobDifferentId,nameDobAmbiguous,fc27Only,legacyOnly,matchedLegacy:matchedLegacyIds.size},missingBefore:missing.length,missingExactLegacyId,missingExactLegacyWithPhysical,missingExactLegacyWithoutPhysical,matched,matchedById,matchedByNameDob,updated,ambiguous,unmatched,matching:"exact external_id first; then normalized name + exact birthdate unique candidate"};
  console.log("[EA_ROSTER_AUDIT]",JSON.stringify(result));
  return NextResponse.json(result);
 }
