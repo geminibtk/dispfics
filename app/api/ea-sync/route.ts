@@ -54,6 +54,7 @@ export async function POST(req:Request){
   try{ctx=await fc27Context()}catch(e:any){return NextResponse.json({error:e?.message||"FC27 context error"},{status:502})}
 
   let synced=0;
+  const fetchedIdCounts=new Map<string,number>();
   for(let offset=0;offset<ctx.total;offset+=100){
     let r:Response;
     try{r=await eaPage(offset,ctx.hash)}catch(e:any){return NextResponse.json({error:e?.message||"EA upstream error",synced,offset},{status:502})}
@@ -65,6 +66,7 @@ export async function POST(req:Request){
     if(!items.length) return NextResponse.json({error:"EA boş sayfa döndürdü",synced,offset},{status:502});
 
     const ids=items.map((x:any)=>String(x.id));
+    for(const id of ids)fetchedIdCounts.set(id,(fetchedIdCounts.get(id)||0)+1);
     const {data:existing}=await s.from("scouting_players").select("external_id,height,weight").in("external_id",ids);
     const physical=new Map((existing||[]).map((x:any)=>[String(x.external_id),{height:x.height,weight:x.weight}]));
     const now=new Date().toISOString();
@@ -93,8 +95,16 @@ export async function POST(req:Request){
     if(items.length<100)break;
   }
   if(synced!==19789)return NextResponse.json({error:`Eksik FC27 sync: ${synced}/19789`,synced},{status:502});
+  const fc27UniqueIds=fetchedIdCounts.size;
+  const fc27DuplicateRows=synced-fc27UniqueIds;
+  const fc27DuplicateIds=Array.from(fetchedIdCounts.values()).filter(count=>count>1).length;
+  const fc27IdHashInput=Array.from(fetchedIdCounts.keys()).sort().join(",");
+  let fc27IdHash=2166136261;
+  for(let i=0;i<fc27IdHashInput.length;i++){fc27IdHash^=fc27IdHashInput.charCodeAt(i);fc27IdHash=Math.imul(fc27IdHash,16777619);}
+  const fc27IdSetHash=(fc27IdHash>>>0).toString(16).padStart(8,"0");
+  console.log("[FC27_ROSTER_AUDIT]",JSON.stringify({synced,fc27UniqueIds,fc27DuplicateRows,fc27DuplicateIds,fc27IdSetHash,featureHash:ctx.hash}));
   const archivedAt=new Date().toISOString();
   const {error:archiveError}=await s.from("scouting_players").update({is_active:false,archived_at:archivedAt}).neq("source","ea-fc27").eq("is_active",true);
   if(archiveError)return NextResponse.json({error:archiveError.message,synced},{status:500});
-  return NextResponse.json({ok:true,synced,total:ctx.total,release:"FC27",databaseRowsPreserved:true,physicalDataPreserved:true});
+  return NextResponse.json({ok:true,synced,total:ctx.total,release:"FC27",fc27UniqueIds,fc27DuplicateRows,fc27DuplicateIds,fc27IdSetHash,databaseRowsPreserved:true,physicalDataPreserved:true});
 }
