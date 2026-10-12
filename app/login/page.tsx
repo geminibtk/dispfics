@@ -10,7 +10,7 @@ export default function Login(){
  }
  return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d0b",color:"white",fontFamily:"Arial"}}>
  <form onSubmit={submit} style={{width:360,maxWidth:"90vw",padding:30,border:"1px solid #203027",borderRadius:16,background:"#0e1512"}}>
- <h1 style={{color:"#49ad60"}}>dispFics</h1><p>{mode==="login"?"Kulüp hesabınıza giriş yapın.":"Yeni kulüp hesabınızı oluşturun."}</p>
+ <h1 style={{color:"#49ad60"}}>disp<span style={{fontWeight:900}}>F</span>ics</h1><p>{mode==="login"?"Kulüp hesabınıza giriş yapın.":"Yeni kulüp hesabınızı oluşturun."}</p>
  <input required value={email} onChange={e=>setEmail(e.target.value)} placeholder="E-posta" type="email" style={input}/>
  <input required minLength={6} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Şifre" type="password" style={input}/>
  <button style={{width:"100%",padding:12,marginTop:10,background:"#2e9d4b",color:"white",border:0,borderRadius:8}}>{mode==="login"?"Giriş Yap":"Kayıt Ol"}</button>
