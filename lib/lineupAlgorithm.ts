@@ -53,7 +53,7 @@ export function computeAutomaticLineup(
         const incumbent=selected[target.slot];
         const snapshot={...selected};
         delete selected[target.slot];
-        if(place(incumbent,target.role,new Set([...blocked,target.slot]),new Set([...moving,incumbent]))){
+        if(place(incumbent,target.role,new Set(Array.from(blocked).concat(target.slot)),new Set(Array.from(moving).concat(incumbent)))){
           selected[target.slot]=pid;
           return true;
         }
