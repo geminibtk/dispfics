@@ -67,6 +67,8 @@ export default function Lineup(){
  function fits(p:any,slot:string){return playerPositions(p).includes(normPos(slot.split("_")[0]))}
  function lineupMetrics(sel:Record<string,string>){const ids=Object.values(sel).filter(Boolean);const ps=ids.map(id=>players.find(p=>String(p.id)===String(id))).filter(Boolean);const avg=(vals:number[])=>vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;return {rating:avg(ps.map(p=>Number(p.rating)).filter(Number.isFinite)),age:avg(ps.map(p=>p.age==null?NaN:Number(p.age)).filter(Number.isFinite)),value:avg(ps.map(p=>p.marketValue==null?NaN:Number(p.marketValue)).filter(Number.isFinite))}}
  const metrics=useMemo(()=>lineupMetrics(selected),[selected,players]);
+ const formationStats=useMemo(()=>{if(!players.length)return [];const referenceIds=new Set(players.slice(0,11).map(p=>String(p.id)));return keys.map((f,i)=>{const r=computeAutomaticLineup(players,f.roles,i,playerPositions);const ids=Object.values(r.selected).filter(Boolean).map(String);const m=lineupMetrics(r.selected);return {...f,index:i,selected:r.selected,reserves:r.reserves,top11:ids.filter(id=>referenceIds.has(id)).length,...m}}).sort((a,b)=>b.top11-a.top11||(b.rating??-Infinity)-(a.rating??-Infinity)||(b.age??-Infinity)-(a.age??-Infinity)||(b.value??-Infinity)-(a.value??-Infinity)||a.index-b.index)},[players]);
+ const topFormation=formationStats[0]||null;
  function formatMarketValue(v:number|null){if(v==null)return "—";return v>=1000000?`€${(v/1000000).toLocaleString("tr-TR",{maximumFractionDigits:2})}M`:`€${Math.round(v/1000).toLocaleString("tr-TR")}K`}
  function changeFormation(key:string){setFormationKey(key);const fi=keys.findIndex(x=>x.key===key),f=keys[fi]||keys[0];const r=computeAutomaticLineup(players,f.roles,fi,playerPositions);setSelected(r.selected);setAutoReserves(r.reserves);setMsg("Diziliş için en iyi 11 otomatik hesaplandı.")}
 
@@ -83,6 +85,7 @@ export default function Lineup(){
   <small style={{color:"#49ad60"}}>İLK 11 • {formation.name}</small>
   <p style={{color:"#aab7af"}}>Dizilişi seçtiğiniz anda en iyi 11 otomatik hesaplanır. İsterseniz pozisyonlara tıklayıp manuel değişiklik yapabilirsiniz.</p>
   <div style={{display:"flex",gap:10,flexWrap:"wrap",margin:"10px 0 14px"}}><span style={metricCard}><small style={metricLabel}>ORT. REYTİNG</small><b>{metrics.rating!=null?metrics.rating.toFixed(2):"—"}</b></span><span style={metricCard}><small style={metricLabel}>ORT. YAŞ</small><b>{metrics.age!=null?metrics.age.toFixed(2):"—"}</b></span><span style={metricCard}><small style={metricLabel}>ORT. DEĞER</small><b>{formatMarketValue(metrics.value)}</b></span></div>
+  {formationStats.length>0&&<div style={{margin:"12px 0 18px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:8}}><b>29 Diziliş Karşılaştırması</b>{topFormation&&<span style={{color:"#9bcba7"}}>Top Diziliş: <strong>{topFormation.name}{keys.filter(x=>x.name===topFormation.name).length>1?` • Varyasyon ${topFormation.variant}`:""}</strong></span>}</div><div style={statsTable}><div style={statsHead}><span>Diziliş</span><span>İlk 11</span><span>Reyting</span><span>Yaş</span><span>Değer</span></div>{formationStats.map((x,rank)=><button key={x.key} onClick={()=>changeFormation(x.key)} style={{...statsRow,...(x.key===formation.key?statsActive:{})}}><span><b>{rank+1}. {x.name}</b>{keys.filter(y=>y.name===x.name).length>1&&<small style={{display:"block",color:"#718078"}}>Varyasyon {x.variant}</small>}</span><span>{x.top11}/11</span><span>{x.rating!=null?x.rating.toFixed(2):"—"}</span><span>{x.age!=null?x.age.toFixed(2):"—"}</span><span>{formatMarketValue(x.value)}</span></button>)}</div></div>}
   <label style={{display:"block",maxWidth:360,margin:"10px 0"}}>Diziliş
    <select value={formation.key} onChange={e=>changeFormation(e.target.value)} style={input}>{keys.map(x=><option key={x.key} value={x.key}>{x.name}{keys.filter(y=>y.name===x.name).length>1?" • Varyasyon "+x.variant:""}</option>)}</select>
   </label>
@@ -108,3 +111,8 @@ const primary={padding:"12px 20px",background:"#2e9d4b",color:"white",border:0,b
 
 const metricCard:any={minWidth:140,padding:"10px 14px",background:"#0e1512",border:"1px solid #294032",borderRadius:10,display:"grid",gap:4};
 const metricLabel:any={color:"#718078",fontSize:10};
+
+const statsTable:any={border:"1px solid #294032",borderRadius:10,overflow:"auto",maxHeight:420};
+const statsHead:any={display:"grid",gridTemplateColumns:"minmax(150px,1.6fr) repeat(4,minmax(80px,1fr))",gap:8,padding:"9px 12px",minWidth:560,background:"#132019",color:"#8fa399",fontSize:11,position:"sticky",top:0,zIndex:2};
+const statsRow:any={width:"100%",display:"grid",gridTemplateColumns:"minmax(150px,1.6fr) repeat(4,minmax(80px,1fr))",gap:8,alignItems:"center",padding:"10px 12px",minWidth:560,background:"#080d0b",color:"white",border:0,borderTop:"1px solid #203027",textAlign:"left",cursor:"pointer"};
+const statsActive:any={background:"#132019",outline:"1px solid #49ad60"};
