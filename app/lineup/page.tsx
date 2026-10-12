@@ -52,8 +52,8 @@ export default function Lineup(){
   const {data:{user}}=await s.auth.getUser();if(!user)return router.push("/login");
   const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(!m)return router.push("/onboarding");
   const {data:club}=await s.from("clubs").select("name").eq("id",m.club_id).maybeSingle();let squad:any[]=[];
-  if(club?.name){const {data:sp}=await s.from("scouting_players").select("id,external_id,name,position,alternate_positions,overall,club,league").eq("is_active",true).eq("club",club.name).order("overall",{ascending:false});squad=(sp||[]).map((x:any)=>({id:String(x.id),name:x.name,position:x.position,alternatePositions:Array.isArray(x.alternate_positions)?x.alternate_positions:[],rating:Number(x.overall||0),source:"scouting"}))}
-  if(!squad.length){const {data:p}=await s.from("players").select("*").eq("club_id",m.club_id).order("rating",{ascending:false});squad=p||[]}
+  if(club?.name){const {data:sp}=await s.from("scouting_players").select("id,external_id,name,position,alternate_positions,overall,age,estimated_value_eur,club,league").eq("is_active",true).eq("club",club.name).order("overall",{ascending:false});squad=(sp||[]).map((x:any)=>({id:String(x.id),name:x.name,position:x.position,alternatePositions:Array.isArray(x.alternate_positions)?x.alternate_positions:[],rating:Number(x.overall||0),age:x.age!=null?Number(x.age):null,marketValue:x.estimated_value_eur!=null?Number(x.estimated_value_eur):null,source:"scouting"}))}
+  if(!squad.length){const {data:p}=await s.from("players").select("*").eq("club_id",m.club_id).order("rating",{ascending:false});squad=(p||[]).map((x:any)=>({...x,marketValue:x.market_value!=null?Number(x.market_value):null}))}
   setPlayers(squad);
   let {data:l}=await s.from("lineups").select("*").eq("club_id",m.club_id).eq("is_active",true).limit(1).maybeSingle();
   if(!l){const x=await s.from("lineups").insert({club_id:m.club_id,name:"İlk 11",formation:"3-4-2-1"}).select().single();l=x.data}
@@ -65,6 +65,9 @@ export default function Lineup(){
  function normPos(v:any){return String(v||"").toLocaleUpperCase("tr-TR").replace(/Ğ/g,"G").replace(/İ/g,"I").replace(/Ş/g,"S").replace(/Ü/g,"U").replace(/Ö/g,"O").replace(/Ç/g,"C")}
  function playerPositions(p:any){const raw=[p.position,...(p.alternatePositions||[]).map((x:any)=>typeof x==="string"?x:(x?.shortLabel||x?.label))];return raw.map(normPos).filter(Boolean).filter((v:string,i:number,a:string[])=>a.indexOf(v)===i)}
  function fits(p:any,slot:string){return playerPositions(p).includes(normPos(slot.split("_")[0]))}
+ function lineupMetrics(sel:Record<string,string>){const ids=Object.values(sel).filter(Boolean);const ps=ids.map(id=>players.find(p=>String(p.id)===String(id))).filter(Boolean);const avg=(vals:number[])=>vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;return {rating:avg(ps.map(p=>Number(p.rating)).filter(Number.isFinite)),age:avg(ps.map(p=>p.age==null?NaN:Number(p.age)).filter(Number.isFinite)),value:avg(ps.map(p=>p.marketValue==null?NaN:Number(p.marketValue)).filter(Number.isFinite))}}
+ const metrics=useMemo(()=>lineupMetrics(selected),[selected,players]);
+ function formatMarketValue(v:number|null){if(v==null)return "—";return v>=1000000?`€${(v/1000000).toLocaleString("tr-TR",{maximumFractionDigits:2})}M`:`€${Math.round(v/1000).toLocaleString("tr-TR")}K`}
  function changeFormation(key:string){setFormationKey(key);const fi=keys.findIndex(x=>x.key===key),f=keys[fi]||keys[0];const r=computeAutomaticLineup(players,f.roles,fi,playerPositions);setSelected(r.selected);setAutoReserves(r.reserves);setMsg("Diziliş için en iyi 11 otomatik hesaplandı.")}
 
  async function save(){
@@ -79,6 +82,7 @@ export default function Lineup(){
  return <AppShell title="Aktif Kadro"><div style={{maxWidth:1050}}>
   <small style={{color:"#49ad60"}}>İLK 11 • {formation.name}</small>
   <p style={{color:"#aab7af"}}>Dizilişi seçtiğiniz anda en iyi 11 otomatik hesaplanır. İsterseniz pozisyonlara tıklayıp manuel değişiklik yapabilirsiniz.</p>
+  <div style={{display:"flex",gap:10,flexWrap:"wrap",margin:"10px 0 14px"}}><span style={metricCard}><small style={metricLabel}>ORT. REYTİNG</small><b>{metrics.rating!=null?metrics.rating.toFixed(2):"—"}</b></span><span style={metricCard}><small style={metricLabel}>ORT. YAŞ</small><b>{metrics.age!=null?metrics.age.toFixed(2):"—"}</b></span><span style={metricCard}><small style={metricLabel}>ORT. DEĞER</small><b>{formatMarketValue(metrics.value)}</b></span></div>
   <label style={{display:"block",maxWidth:360,margin:"10px 0"}}>Diziliş
    <select value={formation.key} onChange={e=>changeFormation(e.target.value)} style={input}>{keys.map(x=><option key={x.key} value={x.key}>{x.name}{keys.filter(y=>y.name===x.name).length>1?" • Varyasyon "+x.variant:""}</option>)}</select>
   </label>
@@ -101,3 +105,6 @@ const sheet:any={width:"min(520px,100%)",maxHeight:"80vh",overflow:"auto",paddin
 const close:any={fontSize:28,border:0,background:"transparent",color:"white",cursor:"pointer"};
 const playerBtn:any={width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,padding:12,border:"1px solid #203027",borderRadius:10,background:"#080d0b",color:"white",textAlign:"left",cursor:"pointer"};
 const primary={padding:"12px 20px",background:"#2e9d4b",color:"white",border:0,borderRadius:8,fontWeight:700,cursor:"pointer"};
+
+const metricCard:any={minWidth:140,padding:"10px 14px",background:"#0e1512",border:"1px solid #294032",borderRadius:10,display:"grid",gap:4};
+const metricLabel:any={color:"#718078",fontSize:10};
