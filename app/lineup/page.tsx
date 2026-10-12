@@ -89,7 +89,7 @@ export default function Lineup(){
 
  return <AppShell title="Aktif Kadro"><div style={{maxWidth:1050}}>
   <small style={{color:"#49ad60"}}>İLK 11 • {formation.name}</small>
-  <p style={{color:"#aab7af"}}>Dizilişi seçtiğiniz anda en iyi 11 otomatik hesaplanır. İsterseniz pozisyonlara tıklayıp manuel değişiklik yapabilirsiniz.</p>
+  <p style={{color:"#aab7af"}}>Dizilişi seçtiğiniz anda Dispfics en iyi 11'i otomatik hesaplar.</p>
   {topFormation&&<button onClick={()=>changeFormation(topFormation.key)} style={topFormationButton}><span><small style={{display:"block",color:"#718078",fontWeight:700}}>TOP DİZİLİŞ</small><b>{topFormation.name}{keys.filter(x=>x.name===topFormation.name).length>1?` • Varyasyon ${topFormation.variant}`:""}</b></span><strong style={{color:"#9bcba7"}}>{aiFormation?"AI ÖNERİSİ":"TRANSFER GEREKLİ"}</strong></button>}
   <label style={{display:"block",maxWidth:360,margin:"10px 0"}}>Diğer Dizilişler
    <select value={otherFormationKey||(formationStats[1]?.key||"")} onChange={e=>{setOtherFormationKey(e.target.value);if(e.target.value)changeFormation(e.target.value)}} style={input}>{formationStats.slice(1).map(x=><option key={x.key} value={x.key}>{x.name}{keys.filter(y=>y.name===x.name).length>1?" • Varyasyon "+x.variant:""}</option>)}</select>
