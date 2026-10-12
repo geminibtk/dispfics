@@ -72,7 +72,7 @@ export function computeAutomaticLineup(
     }
   }
 
-  for(const role of relocatedRoles){
+  for(const role of Array.from(relocatedRoles)){
     const same=slots.filter(x=>x.role===role);
     if(same.length<2)continue;
     const ids=same.map(x=>selected[x.slot]).filter(Boolean)
