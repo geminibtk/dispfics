@@ -86,7 +86,7 @@ export default function Scouting(){
   {resultTotal>0&&<div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:10,marginTop:18}}><div>{offset>0&&<button disabled={loading} onClick={()=>load(Math.max(0,offset-PAGE_SIZE),q.trim())} style={navButton}>← Önceki 200</button>}</div><span style={{color:"#8fa399"}}>{(offset+1).toLocaleString("tr-TR")}–{Math.min(offset+PAGE_SIZE,resultTotal).toLocaleString("tr-TR")} / {resultTotal.toLocaleString("tr-TR")}</span><div style={{textAlign:"right"}}>{offset+PAGE_SIZE<resultTotal&&<button disabled={loading} onClick={()=>load(offset+PAGE_SIZE,q.trim())} style={navButton}>Sonraki 200 →</button>}</div></div>}
  </div></AppShell>
 }
-function formatValue(v:number){return v>=1000000?`€${(v/1000000).toLocaleString("tr-TR",{maximumFractionDigits:1})}M`:`€${Math.round(v/1000).toLocaleString("tr-TR")}K`}
+function formatValue(v:number){return v>=1000000?`€${(v/1000000).toLocaleString("tr-TR",{maximumFractionDigits:0})}M`:`€${Math.round(v/1000).toLocaleString("tr-TR")}K`}
 function Stat({n,v}:{n:string;v?:number}){return <span style={{textAlign:"center"}}><small style={{display:"block",color:"#718078"}}>{n}</small><b>{v??"—"}</b></span>}
 const input={padding:12,background:"#0e1512",color:"white",border:"1px solid #294032",borderRadius:9,minWidth:0};
 const button={padding:"9px 12px",background:"#2e9d4b",color:"white",border:0,borderRadius:8,fontWeight:700};
