@@ -102,7 +102,7 @@ export default function Lineup(){
  </div></AppShell>
 }
 const input={display:"block",width:"100%",marginTop:9,padding:11,background:"#080d0b",color:"white",border:"1px solid #294032",borderRadius:8};
-const pitch:any={position:"relative",width:"100%",maxWidth:820,height:"min(72dvh,760px)",minHeight:560,margin:"18px auto",border:"1px solid #5b9b68",borderRadius:20,overflow:"hidden",boxShadow:"inset 0 0 60px rgba(0,0,0,.28),background:"repeating-linear-gradient(0deg,#195f31 0,#195f31 10%,#1e6937 10%,#1e6937 20%)"};
+const pitch:any={position:"relative",width:"100%",maxWidth:820,height:"min(72dvh,760px)",minHeight:560,margin:"18px auto",border:"1px solid #5b9b68",borderRadius:20,overflow:"hidden",boxShadow:"inset 0 0 60px rgba(0,0,0,.28)",background:"repeating-linear-gradient(0deg,#195f31 0,#195f31 10%,#1e6937 10%,#1e6937 20%)"};
 const spot:any={position:"absolute",zIndex:5,transform:"translate(-50%,-50%)",width:142,border:0,background:"transparent",color:"white",cursor:"pointer",textAlign:"center",padding:0};
 const playerAvatar:any={display:"grid",placeItems:"center",margin:"0 auto -7px",width:54,height:54,borderRadius:"50%",overflow:"hidden",background:"#101814",border:"2px solid #66c77a",boxShadow:"0 5px 18px rgba(0,0,0,.35)"};
 const playerCard:any={display:"grid",gap:2,padding:"9px 8px 7px",borderRadius:10,background:"rgba(8,13,11,.92)",border:"1px solid rgba(102,199,122,.55)",boxShadow:"0 6px 18px rgba(0,0,0,.28)"};
