@@ -96,19 +96,16 @@ export default function Lineup(){
   </label>
   <div style={{display:"flex",gap:10,flexWrap:"wrap",margin:"10px 0 14px"}}><span style={metricCard}><small style={metricLabel}>ORT. REYTİNG</small><b>{metrics.rating!=null?metrics.rating.toFixed(0):"—"}</b></span><span style={metricCard}><small style={metricLabel}>ORT. YAŞ</small><b>{metrics.age!=null?metrics.age.toFixed(0):"—"}</b></span><span style={metricCard}><small style={metricLabel}>ORT. DEĞER</small><b>{formatMarketValue(metrics.value)}</b></span></div>
   {(()=>{const plan=transferPlan();if(!plan)return null;const required=plan.type==="required";const targetText=plan.targets.map(t=>t.playerName?`${t.playerName} (${t.role})`:t.role).join(", ");return <div style={transferNotice}><b>Transfer Önerisi</b><span>{required?`Kadrodaki boş pozisyon için transfer önerisi: ${targetText}.`:`Transfer önerisi yapılan oyuncu: ${targetText}.`}</span><button onClick={openTransferOffer} style={offerBtn}>{required?"Transfer adayı bul":"Alternatif oyuncuları göster"}</button></div>})()}
-  <section className="clubSquadPanel">
-   <div className="clubSquadHead"><div><small>AKTİF KADRO</small><h3>{formation.name} İlk 11</h3></div><span>{Object.values(selected).filter(Boolean).length} oyuncu</span></div>
-   <div className="clubSquadLabels"><span>OYUNCU</span><span>POZİSYON</span><span>YAŞ</span><span>DISPFICS REYTİNG</span><span>DEĞER</span><span></span></div>
-   <div className="clubSquadList">{slots.map(({slot,role})=>{const p=players.find(v=>String(v.id)===String(selected[slot]));return p?<button key={slot} onClick={()=>router.push(`/scouting/${p.id}`)} className="clubSquadRow"><span className="clubSquadPlayer">{p.avatar_url?<img src={p.avatar_url} alt=""/>:<i>{initials(p.name)}</i>}<b>{p.name}</b></span><span>{role}</span><span>{p.age??"—"}</span><strong>{Number(p.rating).toFixed(0)}</strong><span>{formatMarketValue(p.marketValue)}</span><em>Detay →</em></button>:<div key={slot} className="clubSquadRow"><span className="clubSquadPlayer"><i>+</i><b>Boş Pozisyon</b></span><span>{role}</span><span>—</span><strong>—</strong><span>—</span><em></em></div>})}</div>
-  </section>
+  <div style={pitch}>{slots.map(({slot,role,x,y})=>{const p=players.find(v=>String(v.id)===String(selected[slot]));return <button key={slot} onClick={()=>p&&router.push(`/scouting/${p.id}`)} style={{...spot,left:x+"%",top:y+"%"}}><span style={playerAvatar}>{p?.avatar_url?<img src={p.avatar_url} alt=""/>:<i>{p?initials(p.name):"+"}</i>}</span><span style={playerCard}><b>{p?p.name:"Boş Pozisyon"}</b><small>{role}{p?.age!=null?` • ${p.age} yaş`:""}</small><span><strong>{p?Number(p.rating).toFixed(0):"—"}</strong>{p&&<em>{formatMarketValue(p.marketValue)}</em>}</span></span></button>})}<div style={half}/><div style={circle}/><div style={boxTop}/><div style={boxBottom}/></div>
   {autoReserves.length>0&&<section className="clubSquadPanel" style={{marginTop:12}}><div className="clubSquadHead"><div><small>YEDEKLER</small><h3>Kadro Sırası</h3></div><span>{autoReserves.length} oyuncu</span></div><div className="clubSquadLabels"><span>OYUNCU</span><span>POZİSYON</span><span>YAŞ</span><span>DISPFICS REYTİNG</span><span>DEĞER</span><span></span></div><div className="clubSquadList">{autoReserves.map((p,i)=><button key={p.id} onClick={()=>router.push(`/scouting/${p.id}`)} className="clubSquadRow"><span className="clubSquadPlayer">{p.avatar_url?<img src={p.avatar_url} alt=""/>:<i>{initials(p.name)}</i>}<b>{12+i}. {p.name}</b></span><span>{p.position||"—"}</span><span>{p.age??"—"}</span><strong>{Number(p.rating).toFixed(0)}</strong><span>{formatMarketValue(p.marketValue)}</span><em>Detay →</em></button>)}</div></section>}
   <span style={{color:"#9bcba7"}}>{msg}</span>
  </div></AppShell>
 }
 const input={display:"block",width:"100%",marginTop:9,padding:11,background:"#080d0b",color:"white",border:"1px solid #294032",borderRadius:8};
-const pitch:any={position:"relative",width:"100%",maxWidth:720,height:"min(66dvh,680px)",minHeight:460,margin:"14px auto",border:"2px solid #b9dfc0",borderRadius:8,overflow:"hidden",background:"repeating-linear-gradient(0deg,#1f7138 0,#1f7138 10%,#247b3e 10%,#247b3e 20%)"};
-const spot:any={position:"absolute",zIndex:5,transform:"translate(-50%,-50%)",width:112,border:0,background:"transparent",color:"white",cursor:"pointer",textAlign:"center"};
-const ball:any={display:"grid",placeItems:"center",margin:"0 auto 4px",width:46,height:46,borderRadius:"50%",background:"#0e1512",border:"2px solid #49ad60",fontSize:20,fontWeight:800};
+const pitch:any={position:"relative",width:"100%",maxWidth:820,height:"min(72dvh,760px)",minHeight:560,margin:"18px auto",border:"1px solid #5b9b68",borderRadius:20,overflow:"hidden",boxShadow:"inset 0 0 60px rgba(0,0,0,.28),background:"repeating-linear-gradient(0deg,#195f31 0,#195f31 10%,#1e6937 10%,#1e6937 20%)"};
+const spot:any={position:"absolute",zIndex:5,transform:"translate(-50%,-50%)",width:142,border:0,background:"transparent",color:"white",cursor:"pointer",textAlign:"center",padding:0};
+const playerAvatar:any={display:"grid",placeItems:"center",margin:"0 auto -7px",width:54,height:54,borderRadius:"50%",overflow:"hidden",background:"#101814",border:"2px solid #66c77a",boxShadow:"0 5px 18px rgba(0,0,0,.35)"};
+const playerCard:any={display:"grid",gap:2,padding:"9px 8px 7px",borderRadius:10,background:"rgba(8,13,11,.92)",border:"1px solid rgba(102,199,122,.55)",boxShadow:"0 6px 18px rgba(0,0,0,.28)"};
 const half:any={position:"absolute",left:0,right:0,top:"50%",borderTop:"2px solid #b9dfc0"};
 const circle:any={position:"absolute",left:"50%",top:"50%",width:110,height:110,border:"2px solid #b9dfc0",borderRadius:"50%",transform:"translate(-50%,-50%)"};
 const boxTop:any={position:"absolute",left:"27%",top:-2,width:"46%",height:"15%",border:"2px solid #b9dfc0"};
@@ -118,6 +115,7 @@ const sheet:any={width:"min(520px,100%)",maxHeight:"80vh",overflow:"auto",paddin
 const close:any={fontSize:28,border:0,background:"transparent",color:"white",cursor:"pointer"};
 const playerBtn:any={width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,padding:12,border:"1px solid #203027",borderRadius:10,background:"#080d0b",color:"white",textAlign:"left",cursor:"pointer"};
 
+const playerCardMeta:any={};
 const metricCard:any={minWidth:140,padding:"10px 14px",background:"#0e1512",border:"1px solid #294032",borderRadius:10,display:"grid",gap:4};
 const metricLabel:any={color:"#718078",fontSize:10};
 
