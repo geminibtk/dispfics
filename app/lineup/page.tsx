@@ -91,8 +91,8 @@ export default function Lineup(){
  return <AppShell title="Aktif Kadro"><div style={{maxWidth:1050}}>
   <small style={{color:"#49ad60"}}>İLK 11 • {formation.name}</small>
   <p style={{color:"#aab7af"}}>Dizilişi seçtiğiniz anda dispFics en iyi 11'i otomatik hesaplar.</p>
-  {topFormation&&<button onClick={()=>changeFormation(topFormation.key)} style={topFormationButton}><span><small style={{display:"block",color:"#718078",fontWeight:700}}>TOP DİZİLİŞ</small><b>{topFormation.name}{keys.filter(x=>x.name===topFormation.name).length>1?` • Varyasyon ${topFormation.variant}`:""}</b></span><strong style={{color:"#9bcba7"}}>{aiFormation?"AI ÖNERİSİ":"TRANSFER GEREKLİ"}</strong></button>}
-  <label style={{display:"block",maxWidth:360,margin:"10px 0"}}>Oynatmak İstediğiniz Diziliş
+  {topFormation&&<button onClick={()=>changeFormation(topFormation.key)} style={topFormationButton}><span><b>{topFormation.name}{keys.filter(x=>x.name===topFormation.name).length>1?` • Varyasyon ${topFormation.variant}`:""}</b></span><strong style={{color:"#9bcba7"}}>{aiFormation?"AI ÖNERİSİ":"TRANSFER GEREKLİ"}</strong></button>}
+  <label style={{display:"block",maxWidth:360,margin:"10px 0"}}>Diğer Dizilişler
    <select value={otherFormationKey} onChange={e=>{if(e.target.value)changeFormation(e.target.value)}} style={input}><option value="" disabled>Diziliş seçin</option>{formationStats.slice(1).map(x=><option key={x.key} value={x.key}>{x.name}{keys.filter(y=>y.name===x.name).length>1?" • Varyasyon "+x.variant:""}</option>)}</select>
   </label>
   <div style={{display:"flex",gap:10,flexWrap:"wrap",margin:"10px 0 14px"}}><span style={metricCard}><small style={metricLabel}>ORT. REYTİNG</small><b>{metrics.rating!=null?displayRating(metrics.rating):"—"}</b></span><span style={metricCard}><small style={metricLabel}>ORT. YAŞ</small><b>{metrics.age!=null?metrics.age.toFixed(0):"—"}</b></span><span style={metricCard}><small style={metricLabel}>ORT. DEĞER</small><b>{formatMarketValue(metrics.value)}</b></span></div>
