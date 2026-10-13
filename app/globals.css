@@ -45,3 +45,15 @@
  .aiTransferCandidates .clubSquadRow>span:nth-child(5),.aiTransferCandidates .clubSquadRow>span:nth-child(6){display:block!important}
  .aiTransferCandidates .clubSquadRow>span:last-child{position:static;background:transparent;padding-left:0}
 }
+
+/* Dedicated AI candidate layout — no inherited clubSquadRow hiding/cropping */
+.aiTransferCandidates{width:100%;overflow-x:auto!important}
+.aiCandidateLabels,.aiCandidateRow{display:grid;grid-template-columns:minmax(180px,2fr) 90px 55px 100px 145px minmax(180px,1fr);gap:12px;align-items:center;min-width:850px}
+.aiCandidateLabels{padding:10px 16px;background:#09100c;color:#75857b;font-size:10px;font-weight:800}
+.aiCandidateRow{padding:11px 16px;color:#fff;border-top:1px solid #1b2921}
+.aiCandidateRow:hover{background:#111c16}
+.aiCandidateRow>strong{font-size:20px;color:#49ad60}
+.aiCandidateRow em{font-style:normal;color:#9bcba7;font-size:12px}
+.aiCandidateRow>span:last-child{display:grid!important;visibility:visible!important;position:static!important;overflow:visible!important}
+.aiCandidateRow button{display:inline-flex!important;visibility:visible!important;opacity:1;align-items:center;justify-content:center;min-height:38px}
+@media(max-width:850px){.aiCandidateLabels,.aiCandidateRow{min-width:850px}.aiCandidateRow>span:nth-child(5),.aiCandidateRow>span:nth-child(6),.aiCandidateRow em{display:block!important}.aiTransferCandidates{-webkit-overflow-scrolling:touch}}
