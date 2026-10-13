@@ -139,3 +139,10 @@
 .teamSquadColumns,.teamSquadRow{grid-template-columns:minmax(215px,2fr) 130px 90px 65px 125px;gap:12px;min-width:680px}
 @media(max-width:650px){.aiOfferGroup{padding:9px}.aiOfferGroup>.aiTargetPlayer{grid-template-columns:minmax(100px,1.6fr) 58px 48px 65px 62px;gap:5px;font-size:11px}.aiOfferGroup>.aiTargetPlayer .clubSquadPlayer{gap:5px}.aiOfferGroup>.aiTargetPlayer .clubSquadPlayer img,.aiOfferGroup>.aiTargetPlayer .clubSquadPlayer i{width:30px;height:30px}}
 
+
+
+/* Team roster: keep header and cells in the exact same left-to-right order */
+.teamSquadColumns,.teamSquadRow{grid-template-columns:minmax(215px,2fr) 130px 90px 65px 125px 80px;gap:12px;min-width:760px}
+.teamSquadColumns>*,.teamSquadRow>*{order:initial!important}
+.teamSquadDetail{color:#9bcba7;font-size:12px;font-weight:700;white-space:nowrap;text-align:left}
+.teamSquadRow:hover .teamSquadDetail{color:#63d980}
