@@ -29,7 +29,7 @@ export default function Scouting(){
   setLoading(true);setMsg("");
   const {data:{user}}=await s.auth.getUser();if(!user){router.replace("/login");return}
   try{
-   let query=s.from("scouting_players").select("external_id,name,club,league,nationality,position,overall,pace,shooting,passing,dribbling,defending,physical,avatar_url,age,estimated_value_eur,alternate_positions,gender,player_abilities,rank",{count:"exact"}).eq("is_active",true);
+   let query=s.from("scouting_players_ranked").select("external_id,name,club,league,nationality,position,overall,pace,shooting,passing,dribbling,defending,physical,avatar_url,age,estimated_value_eur,alternate_positions,gender,player_abilities,rank,playable_position_count",{count:"exact"}).eq("is_active",true);
    if(search){
     const safe=searchVariants(search).map(x=>x.replace(/[,%()]/g,"")).filter(Boolean);
     const terms=safe.flatMap(x=>[`name.ilike.%${x}%`,`club.ilike.%${x}%`,`nationality.ilike.%${x}%`]);
@@ -48,7 +48,7 @@ export default function Scouting(){
    const sortCol=sort==="age"?"age":sort==="estimatedValue"?"estimated_value_eur":"overall";
    query=query.order(sortCol,{ascending:sortDirection==="asc",nullsFirst:false});
     if(sort==="overall"){
-      query=query.order("age",{ascending:false,nullsFirst:false}).order("estimated_value_eur",{ascending:false,nullsFirst:false});
+      query=query.order("playable_position_count",{ascending:false}).order("position",{ascending:true,nullsFirst:false}).order("age",{ascending:false,nullsFirst:false}).order("estimated_value_eur",{ascending:false,nullsFirst:false});
     }else if(sort==="age"){
       query=query.order("overall",{ascending:false,nullsFirst:false}).order("estimated_value_eur",{ascending:false,nullsFirst:false});
     }else{
@@ -71,7 +71,7 @@ export default function Scouting(){
  return <AppShell title="Oyuncu Keşfi"><div>
   <div className="scoutFilters"><input placeholder="Oyuncu, takım veya ülke ara" value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")load(0,q.trim())}} style={input}/><button onClick={()=>load(0,q.trim())} disabled={loading} style={button}>Ara</button><button onClick={syncEA} disabled={loading} style={navButton}>{loading?"İşleniyor…":"dispFics Verilerini Senkronize Et"}</button></div>
   <details className="scoutAdvanced" open><summary>Filtrele ve Sırala</summary><div className="scoutAdvancedGrid scoutFilterLayout">
-   <label style={{gridColumn:"1 / -1"}}>disp<span style={{fontWeight:900}}>F</span>ics Reyting<span style={{display:"flex",gap:6}}><input type="number" min="1" max="100" placeholder="Min" value={min} onChange={e=>setMin(e.target.value)} style={input}/><input type="number" min="1" max="100" placeholder="Max" value={maxOverall} onChange={e=>setMaxOverall(e.target.value)} style={input}/></span></label>
+   <label style={{gridColumn:"1 / -1"}}><span style={{whiteSpace:"nowrap",display:"inline-block"}}>disp<span style={{fontWeight:900}}>F</span>ics</span> Reyting<span style={{display:"flex",gap:6}}><input type="number" min="1" max="100" placeholder="Min" value={min} onChange={e=>setMin(e.target.value)} style={input}/><input type="number" min="1" max="100" placeholder="Max" value={maxOverall} onChange={e=>setMaxOverall(e.target.value)} style={input}/></span></label>
    <label>Cinsiyet<select value={gender} onChange={e=>setGender(e.target.value)} style={input}><option value="">Tümü</option><option>Erkek Futbolu</option><option>Kadın Futbolu</option></select></label>
    <label>Konum<select value={pos} onChange={e=>setPos(e.target.value)} style={input}><option value="">Tüm Konumlar</option>{positions.map(x=><option key={x}>{x}</option>)}</select></label>
    <label>Ligler<select value={league} onChange={e=>setLeague(e.target.value)} style={input}><option value="">Tüm Ligler</option>{leagues.map(x=><option key={x}>{x}</option>)}</select></label>
