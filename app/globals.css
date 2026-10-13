@@ -75,7 +75,7 @@
 
 /* Transfer centre player table matching overview player form */
 .transferSquadPanel{overflow-x:auto}
-.transferSquadColumns,.transferSquadRow{grid-template-columns:minmax(215px,2fr) 75px 55px 125px 115px minmax(125px,1fr) 65px;gap:12px;min-width:830px}
+.transferSquadColumns,.transferSquadRow{grid-template-columns:minmax(215px,2fr) 75px 55px 125px 115px 65px;gap:12px;min-width:830px}
 .transferSquadRow{cursor:pointer}
 .transferSquadRow select{width:100%;font-size:12px}
 .transferSquadIdentity{display:flex;flex-direction:column;min-width:0;gap:4px}
