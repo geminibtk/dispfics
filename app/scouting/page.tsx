@@ -1,3 +1,4 @@
+import {displayRating,rawRating} from "../../lib/display-rating";
 "use client";
 import {useEffect,useMemo,useState} from "react";
 import {useRouter} from "next/navigation";
@@ -38,8 +39,8 @@ export default function Scouting(){
    if(league)query=query.eq("league",league);
    if(country)query=query.eq("nationality",country);
    if(pos)query=query.or(`position.eq.${pos},alternate_positions.cs.[{"shortLabel":"${pos}"}]`);
-   if(min)query=query.gte("overall",Number(min));
-   if(maxOverall)query=query.lte("overall",Number(maxOverall));
+   if(min)query=query.gte("overall",rawRating(Number(min)));
+   if(maxOverall)query=query.lte("overall",rawRating(Number(maxOverall)));
    if(minAge)query=query.gte("age",Number(minAge));
    if(maxAge)query=query.lte("age",Number(maxAge));
    if(minValue)query=query.gte("estimated_value_eur",Number(minValue)*1000000);
@@ -70,7 +71,7 @@ export default function Scouting(){
  return <AppShell title="Oyuncu Keşfi"><div>
   <div className="scoutFilters"><input placeholder="Oyuncu, takım veya ülke ara" value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")load(0,q.trim())}} style={input}/><button onClick={()=>load(0,q.trim())} disabled={loading} style={button}>Ara</button><button onClick={syncEA} disabled={loading} style={navButton}>{loading?"İşleniyor…":"dispFics Verilerini Senkronize Et"}</button></div>
   <details className="scoutAdvanced" open><summary>Filtrele ve Sırala</summary><div className="scoutAdvancedGrid scoutFilterLayout">
-   <label style={{gridColumn:"1 / -1"}}>disp<span style={{fontWeight:900}}>F</span>ics Reyting<span style={{display:"flex",gap:6}}><input type="number" min="0" max="99" placeholder="Min" value={min} onChange={e=>setMin(e.target.value)} style={input}/><input type="number" min="0" max="99" placeholder="Max" value={maxOverall} onChange={e=>setMaxOverall(e.target.value)} style={input}/></span></label>
+   <label style={{gridColumn:"1 / -1"}}>disp<span style={{fontWeight:900}}>F</span>ics Reyting<span style={{display:"flex",gap:6}}><input type="number" min="1" max="100" placeholder="Min" value={min} onChange={e=>setMin(e.target.value)} style={input}/><input type="number" min="1" max="100" placeholder="Max" value={maxOverall} onChange={e=>setMaxOverall(e.target.value)} style={input}/></span></label>
    <label>Cinsiyet<select value={gender} onChange={e=>setGender(e.target.value)} style={input}><option value="">Tümü</option><option>Erkek Futbolu</option><option>Kadın Futbolu</option></select></label>
    <label>Konum<select value={pos} onChange={e=>setPos(e.target.value)} style={input}><option value="">Tüm Konumlar</option>{positions.map(x=><option key={x}>{x}</option>)}</select></label>
    <label>Ligler<select value={league} onChange={e=>setLeague(e.target.value)} style={input}><option value="">Tüm Ligler</option>{leagues.map(x=><option key={x}>{x}</option>)}</select></label>
@@ -81,7 +82,7 @@ export default function Scouting(){
    <label>Sıralama Yönü<select value={sortDirection} onChange={e=>setSortDirection(e.target.value)} style={input}><option value="asc">Düşükten Yükseğe</option><option value="desc">Yüksekten Düşüğe</option></select></label>
    </div><div className="scoutAdvancedActions"><button onClick={()=>{setGender("");setLeague("");setPos("");setCountry("");setMin("");setMaxOverall("");setMinAge("");setMaxAge("");setMinValue("");setMaxValue("");setSort("overall");setSortDirection("desc");setTimeout(()=>load(0,q.trim()),0)}} style={navButton}>Filtreleri Sıfırla</button><button onClick={()=>load(0,q.trim())} style={button}>Filtreleri Uygula</button></div></details><p style={{color:"#9bcba7"}}>{msg}</p>
   {loading?<div style={empty}>Oyuncular yükleniyor…</div>:<div style={{display:"grid",gap:10}}>{list.map((x,i)=><div className="scoutRow" key={x.id} onClick={()=>router.push(`/scouting/${x.id}`)} role="button" tabIndex={0}><span style={{textAlign:"center",minWidth:42}}><small style={{display:"block",color:"#718078"}}>SIRA</small><b>{offset+i+1}</b></span>
-   <div style={{display:"flex",alignItems:"center",gap:10}}>{x.avatarUrl&&<img src={x.avatarUrl} alt="" width={48} height={48} style={{objectFit:"contain"}}/>}<div><b>{x.name}</b><small style={{display:"block",color:"#aab7af"}}>{x.club} • {x.league}</small></div></div><span><b>{x.position}</b>{x.alternatePositions.length>0&&<small style={{display:"block",color:"#7f9187",marginTop:3}}>Alt: {x.alternatePositions.join(" · ")}</small>}</span><span style={{textAlign:"center"}}><small style={{display:"block",color:"#718078"}}>disp<span style={{fontWeight:900}}>F</span>ics REYTİNG</small><strong style={{fontSize:22,color:"#49ad60"}}>{x.overall}</strong></span><Stat n="YAŞ" v={x.age}/><span style={{textAlign:"center"}}><small style={{display:"block",color:"#718078"}}>DEĞER</small><b>{x.estimatedValue!=null?formatValue(x.estimatedValue):"—"}</b></span><button onClick={e=>{e.stopPropagation();shortlist(x)}} style={button}>Aday Listesine Ekle</button>
+   <div style={{display:"flex",alignItems:"center",gap:10}}>{x.avatarUrl&&<img src={x.avatarUrl} alt="" width={48} height={48} style={{objectFit:"contain"}}/>}<div><b>{x.name}</b><small style={{display:"block",color:"#aab7af"}}>{x.club} • {x.league}</small></div></div><span><b>{x.position}</b>{x.alternatePositions.length>0&&<small style={{display:"block",color:"#7f9187",marginTop:3}}>Alt: {x.alternatePositions.join(" · ")}</small>}</span><span style={{textAlign:"center"}}><small style={{display:"block",color:"#718078"}}>disp<span style={{fontWeight:900}}>F</span>ics REYTİNG</small><strong style={{fontSize:22,color:"#49ad60"}}>{displayRating(x.overall)}</strong></span><Stat n="YAŞ" v={x.age}/><span style={{textAlign:"center"}}><small style={{display:"block",color:"#718078"}}>DEĞER</small><b>{x.estimatedValue!=null?formatValue(x.estimatedValue):"—"}</b></span><button onClick={e=>{e.stopPropagation();shortlist(x)}} style={button}>Aday Listesine Ekle</button>
   </div>)}{!list.length&&<div style={empty}>Bu filtrelerle oyuncu bulunamadı.</div>}</div>}
   {resultTotal>0&&<div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:10,marginTop:18}}><div>{offset>0&&<button disabled={loading} onClick={()=>load(Math.max(0,offset-PAGE_SIZE),q.trim())} style={navButton}>← Önceki 200</button>}</div><span style={{color:"#8fa399"}}>{(offset+1).toLocaleString("tr-TR")}–{Math.min(offset+PAGE_SIZE,resultTotal).toLocaleString("tr-TR")} / {resultTotal.toLocaleString("tr-TR")}</span><div style={{textAlign:"right"}}>{offset+PAGE_SIZE<resultTotal&&<button disabled={loading} onClick={()=>load(offset+PAGE_SIZE,q.trim())} style={navButton}>Sonraki 200 →</button>}</div></div>}
  </div></AppShell>
