@@ -1,5 +1,5 @@
-import {displayRating,rawRating} from "../../lib/display-rating";
 "use client";
+import {displayRating,rawRating} from "../../lib/display-rating";
 import {useEffect,useMemo,useState} from "react";
 import {useRouter} from "next/navigation";
 import {createClient} from "../../lib/supabase";
