@@ -124,3 +124,17 @@
 .transferSquadColumns,.transferSquadRow{grid-template-columns:minmax(215px,2fr) 125px 75px 55px 115px 65px}
 .aiTransferCandidates .aiCandidateLabels,.aiTransferCandidates .aiCandidateRow{grid-template-columns:minmax(215px,2fr) 130px 90px 60px 155px minmax(170px,1fr)}
 .aiTargetColumns,.aiTargetPlayer{grid-template-columns:minmax(215px,2fr) 130px 90px 60px 155px}
+
+
+/* AI recommendation cards: separate target panels without horizontal overflow */
+.aiOfferGroup{min-width:0;max-width:100%;overflow:hidden;padding:14px;border:1px solid #294032;border-radius:12px;background:#101b14;display:grid;gap:10px}
+.aiOfferGroupHead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.aiOfferGroupHead small{color:#8fa399}
+.aiOfferGroup>.aiTargetPlayer{min-width:0;grid-template-columns:minmax(125px,2fr) 90px 65px 100px 90px;gap:8px;padding:10px;border:1px solid #294032;border-radius:9px;background:#15251a;overflow:hidden}
+.aiOfferGroup>.aiTargetPlayer .clubSquadPlayer{min-width:0}
+.aiOfferGroup>.aiTargetPlayer .clubSquadPlayer b{min-width:0}
+.aiOfferGroup .aiTransferCandidates{min-width:0;max-width:100%;overflow-x:auto}
+.aiOfferGroup .aiCandidateLabels,.aiOfferGroup .aiCandidateRow{min-width:830px}
+.teamSquadPanel{overflow-x:auto}
+.teamSquadColumns,.teamSquadRow{grid-template-columns:minmax(215px,2fr) 130px 90px 65px 125px;gap:12px;min-width:680px}
+@media(max-width:650px){.aiOfferGroup{padding:9px}.aiOfferGroup>.aiTargetPlayer{grid-template-columns:minmax(100px,1.6fr) 58px 48px 65px 62px;gap:5px;font-size:11px}.aiOfferGroup>.aiTargetPlayer .clubSquadPlayer{gap:5px}.aiOfferGroup>.aiTargetPlayer .clubSquadPlayer img,.aiOfferGroup>.aiTargetPlayer .clubSquadPlayer i{width:30px;height:30px}}
