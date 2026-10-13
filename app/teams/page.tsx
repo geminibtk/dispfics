@@ -1,5 +1,5 @@
-import {displayRating} from "../../lib/display-rating";
 "use client";
+import {displayRating} from "../../lib/display-rating";
 import {useEffect,useMemo,useState} from "react";import {useRouter} from "next/navigation";import {createClient} from "../../lib/supabase";import AppShell from "../components/AppShell";
 type P={external_id:string;club:string|null;league:string|null;overall:number|null;estimated_value_eur:number|null;gender?:{label?:string}|null};
 type SortKey="rating"|"value"|"players"|"name";
