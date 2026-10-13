@@ -1,5 +1,5 @@
-import {displayRating,rawRating} from "../../lib/display-rating";
 "use client";
+import {displayRating,rawRating} from "../../lib/display-rating";
 import {useEffect,useState} from "react";import {useRouter} from "next/navigation";import {createClient} from "../../lib/supabase";
 import AppShell from "../components/AppShell";
 export default function AI(){const s=createClient();const router=useRouter();const [context,setContext]=useState<any>(null);const [q,setQ]=useState("");const [busy,setBusy]=useState(false);const [chat,setChat]=useState<{q:string;a:string}[]>([]);const [transferRequest,setTransferRequest]=useState<any>(null);const [transferOffers,setTransferOffers]=useState<any[]>([]);const [offerBusy,setOfferBusy]=useState(false);const [selectedPlayer,setSelectedPlayer]=useState<any>(null);const [filters,setFilters]=useState({ratingMin:"",ratingMax:"",ageMin:"",ageMax:"",valueMin:"",valueMax:""});const [pages,setPages]=useState<Record<string,number>>({});const [addingTarget,setAddingTarget]=useState<string|null>(null);const [addedTargets,setAddedTargets]=useState<Record<string,boolean>>({});const [stateReady,setStateReady]=useState(false);
