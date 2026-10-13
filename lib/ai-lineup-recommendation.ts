@@ -45,7 +45,7 @@ export function getAiLineupRecommendation(players:any[]){
  return {name,roles,index,entries,top11:entries.filter(x=>referenceIds.has(x.id)).length,placementValue:entries.reduce((a,x)=>a+x.value,0),top11PlacementValue:entries.filter(x=>referenceIds.has(x.id)).reduce((a,x)=>a+x.value,0),placementByPlayer};
  }).sort((a,b)=>{const first=b.top11-a.top11||a.placementValue-b.placementValue||a.top11PlacementValue-b.top11PlacementValue;if(first)return first;for(let i=0;i<Math.max(a.placementByPlayer.length,b.placementByPlayer.length);i++){const av=a.placementByPlayer[i],bv=b.placementByPlayer[i];if(av===bv)continue;if(av==null)return 1;if(bv==null)return -1;if(av!==bv)return av-bv}return a.index-b.index});
  const best=ranked[0];const filled=new Set(best.entries.map(x=>x.id));const counts:Record<string,number>={};const missing=best.roles.filter(role=>{counts[role]=(counts[role]||0)+1;return best.entries.filter(x=>x.role===role).length<counts[role]});
- const recommendations=missing.map(role=>({role,label:LABELS[role]||role,playerName:null as string|null}));
+ const recommendations:{role:string;label:string;playerName:string|null}[]=missing.map(role=>({role,label:LABELS[role]||role,playerName:null as string|null}));
  if(!recommendations.length)for(const entry of best.entries.filter(x=>!referenceIds.has(x.id)))recommendations.push({role:entry.role,label:LABELS[entry.role]||entry.role,playerName:entry.player?.name||null});
  return {name:best.name,recommendations};
 }
