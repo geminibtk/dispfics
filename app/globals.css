@@ -95,3 +95,10 @@
 .aiTransferCandidates .aiCandidateLabels{padding:10px 16px}
 .aiTransferCandidates .aiCandidateRow>span:last-child{display:flex!important;align-items:center;justify-content:flex-start}
 @media(max-width:650px){.aiTransferFilterGroups{grid-template-columns:1fr}}
+
+
+/* Replaced players in AI transfer recommendations */
+.aiTargetPanel{overflow-x:auto}
+.aiTargetColumns,.aiTargetPlayer{grid-template-columns:minmax(215px,2fr) 90px 60px 130px 155px;gap:12px;min-width:680px}
+.aiTargetPlayer{cursor:pointer}
+.aiTargetPlayer>strong{font-size:20px;color:#49ad60}
