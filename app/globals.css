@@ -146,3 +146,7 @@
 .teamSquadColumns>*,.teamSquadRow>*{order:initial!important}
 .teamSquadDetail{color:#9bcba7;font-size:12px;font-weight:700;white-space:nowrap;text-align:left}
 .teamSquadRow:hover .teamSquadDetail{color:#63d980}
+
+/* Keep lineup alternatives as an independent clickable action */
+.lineupAlternativesAction{background:transparent;border:0;padding:6px 0;color:#9bcba7;font:inherit;font-weight:700;cursor:pointer;text-align:left;white-space:nowrap}
+.lineupAlternativesAction:hover{color:#63d980;text-decoration:underline}
