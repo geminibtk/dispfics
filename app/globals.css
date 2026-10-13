@@ -31,3 +31,17 @@
 
 /* Keep actionable content fully visible on compact screens */
 @media(max-width:600px){button,.clubAction,.scoutAdvancedActions button{min-height:42px}.transferRow{overflow-x:auto}.transferRow>*{min-width:0}.clubSquadRow{scrollbar-width:thin}.clubSquadRow>span:last-child{position:sticky;right:0;background:#0e1512;padding-left:8px}.clubSquadRow:hover>span:last-child{background:#111c16}}
+
+/* AI transfer candidates: never crop value/probability/actions */
+.aiTransferCandidates .clubSquadPanel{overflow:visible}
+.aiTransferCandidates .clubSquadRow{grid-template-columns:minmax(190px,2fr) 80px 55px 90px minmax(145px,1fr) minmax(175px,1fr);overflow:visible}
+.aiTransferCandidates .clubSquadRow>span{min-width:0}
+.aiTransferCandidates .clubSquadRow>span:nth-child(5){overflow:visible}
+.aiTransferCandidates .clubSquadRow>span:last-child{overflow:visible}
+@media(max-width:850px){
+ .aiTransferCandidates .clubSquadPanel{overflow-x:auto}
+ .aiTransferCandidates .clubSquadList{min-width:790px}
+ .aiTransferCandidates .clubSquadRow{grid-template-columns:190px 80px 55px 90px 145px 190px;overflow:visible}
+ .aiTransferCandidates .clubSquadRow>span:nth-child(5),.aiTransferCandidates .clubSquadRow>span:nth-child(6){display:block!important}
+ .aiTransferCandidates .clubSquadRow>span:last-child{position:static;background:transparent;padding-left:0}
+}
