@@ -6,7 +6,7 @@ import {createClient} from "../../lib/supabase";
 import AppShell from "../components/AppShell";
 import {getAiLineupRecommendation} from "../../lib/ai-lineup-recommendation";
 
-type Player={id:string;name:string;position:string;age:number|null;rating:number;market_value:number;avatar_url?:string|null;alternatePositions?:any[]};
+type Player={id:string;name:string;position:string;age:number|null;rating:number;market_value:number;avatar_url?:string|null;alternatePositions?:any[];genderId?:number|null};
 type Match={id:string;opponent:string;kickoff:string;home:boolean;goals_for:number|null;goals_against:number|null;competition?:string|null;kickoff_time_known?:boolean};
 type Target={id:string;name:string;position:string;current_club:string;market_value:number;rating:number;priority:string;status:string};
 type Profile={manager?:string;founded_year?:number;stadium?:string;stadium_capacity?:number;website?:string;external_market_value_eur?:number;source?:string;source_url?:string};
@@ -19,13 +19,13 @@ export default function Players(){
   const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(!m){router.push("/onboarding");return}
   const {data:c}=await s.from("clubs").select("name").eq("id",m.club_id).maybeSingle();const name=c?.name||"";setClubName(name);
   const [ps,ms,ts,pr,ln]=await Promise.all([
-   s.from("scouting_players").select("id,name,position,age,overall,estimated_value_eur,avatar_url,alternate_positions").eq("is_active",true).eq("club",name).order("overall",{ascending:false}),
+   s.from("scouting_players").select("id,name,position,age,overall,estimated_value_eur,avatar_url,alternate_positions,gender").eq("is_active",true).eq("club",name).order("overall",{ascending:false}),
    s.from("matches").select("id,opponent,kickoff,home,goals_for,goals_against,competition,kickoff_time_known").eq("club_id",m.club_id).order("kickoff",{ascending:true}),
    s.from("transfer_targets").select("id,name,position,current_club,market_value,rating,priority,status").eq("club_id",m.club_id).order("created_at",{ascending:false}),
    s.from("club_profiles").select("*").eq("club_id",m.club_id).maybeSingle(),
    s.from("lineups").select("formation").eq("club_id",m.club_id).eq("is_active",true).limit(1).maybeSingle()
   ]);
-  if(ps.error)setMsg(ps.error.message);else setPlayers((ps.data||[]).map((p:any)=>({id:p.id,name:p.name,position:p.position,age:p.age,rating:Number(p.overall||0),market_value:Number(p.estimated_value_eur||0),avatar_url:p.avatar_url,alternatePositions:Array.isArray(p.alternate_positions)?p.alternate_positions:[]})));
+  if(ps.error)setMsg(ps.error.message);else setPlayers((ps.data||[]).map((p:any)=>({id:p.id,name:p.name,position:p.position,age:p.age,rating:Number(p.overall||0),market_value:Number(p.estimated_value_eur||0),avatar_url:p.avatar_url,alternatePositions:Array.isArray(p.alternate_positions)?p.alternate_positions:[],genderId:p.gender?.id!=null?Number(p.gender.id):null})));
   setMatches((ms.data||[]) as Match[]);setTargets((ts.data||[]).map((x:any)=>({...x,market_value:Number(x.market_value||0),rating:Number(x.rating||0)})));setProfile(pr.data as any);setFormation(ln.data?.formation||"");setLoading(false)
  }
  useEffect(()=>{load()},[]);
@@ -38,7 +38,7 @@ export default function Players(){
   const referenceIds=new Set(players.slice(0,11).map(p=>p.id));
   const referencePlayers=players.filter(p=>referenceIds.has(p.id)&&!suggestions.some(x=>x.playerName===p.name));
   const range=(key:"rating"|"age"|"market_value")=>{const nums=referencePlayers.map(p=>p[key]).filter((v):v is number=>typeof v==="number"&&Number.isFinite(v));return nums.length?{min:Math.min(...nums),max:Math.max(...nums)}:null};
-  const genderId=null;
+  const genderId=players.map(p=>p.genderId).find(v=>v===0||v===1)??null;
   const plan={formation:aiRecommendation.name,type:required?"required":"upgrade",roles:Array.from(new Set(suggestions.map(x=>x.role))),targets:suggestions.map(x=>({role:x.role,playerId:players.find(p=>p.name===x.playerName)?.id||null,playerName:x.playerName})),genderId,rating:range("rating"),age:range("age"),value:range("market_value"),createdAt:Date.now()};
   sessionStorage.setItem("dispficsTransferRequest",JSON.stringify(plan));localStorage.removeItem("dispficsTransferRequest");router.push("/ai");
  }
