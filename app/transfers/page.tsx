@@ -1,5 +1,5 @@
-import {displayRating} from "../../lib/display-rating";
 "use client";
+import {displayRating} from "../../lib/display-rating";
 import {useEffect,useMemo,useState} from "react";import {useRouter} from "next/navigation";import {createClient} from "../../lib/supabase";import AppShell from "../components/AppShell";
 export default function Transfers(){const s=createClient();const router=useRouter();const [club,setClub]=useState("");const [rows,setRows]=useState<any[]>([]);const [q,setQ]=useState("");const [pos,setPos]=useState("");const [ages,setAges]=useState<Record<string,number>>({});const [values,setValues]=useState<Record<string,number>>({});
 async function load(){const {data:{user}}=await s.auth.getUser();if(!user)return router.push("/login");const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).limit(1).maybeSingle();if(!m)return router.push("/onboarding");setClub(m.club_id);const {data}=await s.from("transfer_targets").select("*").eq("club_id",m.club_id).order("created_at",{ascending:false});setRows(data||[])}
