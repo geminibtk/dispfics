@@ -81,3 +81,17 @@
 .transferSquadIdentity{display:flex;flex-direction:column;min-width:0;gap:4px}
 .transferSquadIdentity small{font-size:11px;color:#8fa399;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .transferSquadRow>button{justify-self:start}
+
+
+/* AI transfer recommendations: overview-style squad tables and grouped ranges */
+.aiTransferFilterGroups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.aiTransferFilterGroups fieldset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0;margin:0;padding:10px 12px 12px;border:1px solid #294032;border-radius:9px}
+.aiTransferFilterGroups legend{padding:0 5px;color:#b6d6be;font-weight:750;font-size:13px}
+.aiTransferFilterGroups label{min-width:0;font-size:12px;color:#9fb1a5}
+.aiTransferCandidates{overflow-x:auto}
+.aiTransferCandidates .aiCandidateLabels,.aiTransferCandidates .aiCandidateRow{grid-template-columns:minmax(215px,2fr) 90px 60px 130px 155px minmax(170px,1fr);gap:12px;min-width:860px}
+.aiTransferCandidates .aiCandidateRow{width:100%;background:transparent;border:0;border-top:1px solid #1b2921;text-align:left}
+.aiTransferCandidates .aiCandidateRow:hover{background:#111c16}
+.aiTransferCandidates .aiCandidateLabels{padding:10px 16px}
+.aiTransferCandidates .aiCandidateRow>span:last-child{display:flex!important;align-items:center;justify-content:flex-start}
+@media(max-width:650px){.aiTransferFilterGroups{grid-template-columns:1fr}}
