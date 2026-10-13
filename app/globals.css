@@ -57,3 +57,17 @@
 .aiCandidateRow>span:last-child{display:grid!important;visibility:visible!important;position:static!important;overflow:visible!important}
 .aiCandidateRow button{display:inline-flex!important;visibility:visible!important;opacity:1;align-items:center;justify-content:center;min-height:38px}
 @media(max-width:850px){.aiCandidateLabels,.aiCandidateRow{min-width:850px}.aiCandidateRow>span:nth-child(5),.aiCandidateRow>span:nth-child(6),.aiCandidateRow em{display:block!important}.aiTransferCandidates{-webkit-overflow-scrolling:touch}}
+
+
+/* Scouting player list: overview-style table with persistent rank and two actions */
+.scoutSquadPanel{margin-top:12px;overflow-x:auto}
+.scoutSquadColumns,.scoutSquadRow{grid-template-columns:65px minmax(215px,2fr) 75px 55px 125px 100px 85px 150px;gap:10px;min-width:880px}
+.scoutSquadRow{cursor:default}
+.scoutSquadRank{font-weight:800;color:#9bcba7;font-variant-numeric:tabular-nums}
+.scoutSquadIdentity{display:flex;flex-direction:column;min-width:0;gap:4px}
+.scoutSquadIdentity small{font-size:11px;color:#879b8d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scoutSquadPortrait{flex-shrink:0}
+.scoutSquadDetail,.scoutSquadShortlist{cursor:pointer;border:0;background:transparent;color:#9bcba7;text-align:left;font-size:12px;font-weight:700;padding:7px 0}
+.scoutSquadShortlist{background:#193b25;border:1px solid #2b6b3c;border-radius:7px;color:#c7efd0;text-align:center;padding:8px 6px}
+.scoutSquadDetail:hover{text-decoration:underline}
+.scoutSquadShortlist:hover{background:#235332}
