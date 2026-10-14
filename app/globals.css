@@ -150,3 +150,6 @@
 /* Keep lineup alternatives as an independent clickable action */
 .lineupAlternativesAction{background:transparent;border:0;padding:6px 0;color:#9bcba7;font:inherit;font-weight:700;cursor:pointer;text-align:left;white-space:nowrap}
 .lineupAlternativesAction:hover{color:#63d980;text-decoration:underline}
+
+/* Preserve the explicit left-to-right column order in analysis player tables. */
+.analysisPlayerColumns > * { order: 0 !important; }
