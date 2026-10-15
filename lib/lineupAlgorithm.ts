@@ -72,10 +72,20 @@ export function orderLineupReserves(
   const tier=new Map<string,number>();
   chains.forEach(c=>c.members.forEach((id,i)=>{if(i>0)tier.set(id,i)}));
   const rank=new Map(candidates.map((p,i)=>[String(p.id),i]));
-  return candidates.filter(p=>tier.has(String(p.id)))
+  // Every non-starter appears exactly once. Players with no compatible
+  // reserve chain always follow all assigned reserves, including deeper tiers.
+  const assigned=candidates.filter(p=>tier.has(String(p.id)))
     .sort((a,b)=>(tier.get(String(a.id))||0)-(tier.get(String(b.id))||0)
-      ||(rank.get(String(a.id))||0)-(rank.get(String(b.id))||0))
-    .concat(candidates.filter(p=>!tier.has(String(p.id))));
+      ||(rank.get(String(a.id))||0)-(rank.get(String(b.id))||0));
+  const unassigned=candidates.filter(p=>!tier.has(String(p.id)));
+  const ordered=assigned.concat(unassigned);
+  const seenIds=new Set<string>();
+  return ordered.filter(p=>{
+    const id=String(p.id);
+    if(seenIds.has(id))return false;
+    seenIds.add(id);
+    return true;
+  });
 }
 
 export function computeAutomaticLineup(
