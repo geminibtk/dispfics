@@ -17,7 +17,7 @@ export function orderLineupReserves(
   const counts:Record<string,number>={};
   const slots=roles.map(role=>({slot:role+"_"+(counts[role]=(counts[role]||0)+1),role}));
   type Chain={slot:string;role:string;members:string[]};
-  const chains:Chain[]=slots.map(s=>({...s,members:selected[s.slot]?[String(selected[s.slot])]:[]}));
+  const chains:Chain[]=slots.map(s=>({...s,members:selected[s.slot]?[String(selected[s.slot])]:[""]}));
   const result:string[]=[];
   const waiting:string[]=[];
   const firstPos=(id:string)=>getPositions(byId.get(id)||{})[0]||"";
