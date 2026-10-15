@@ -101,15 +101,15 @@ export default function Lineup(){
   <div style={pitch}>{slots.map(({slot,role,x,y})=>{const p=players.find(v=>String(v.id)===String(selected[slot]));return <button key={slot} onClick={()=>p&&router.push(`/scouting/${p.id}`)} style={{...spot,left:x+"%",top:y+"%"}}><span style={playerAvatar}>{p?.avatar_url?<img src={p.avatar_url} alt="" style={avatarImg}/>:<i style={avatarFallback}>{p?initials(p.name):"+"}</i>}</span><span style={playerCard}><b style={playerName}>{p?p.name:"Boş Pozisyon"}</b><small style={playerInfo}>{role}{p?.age!=null?` • ${p.age} yaş`:""}</small><span style={playerStats}><strong style={ratingBadge}>{p?displayRating(p.rating):"—"}</strong>{p&&<em style={valueText}>{formatMarketValue(p.marketValue)}</em>}</span></span></button>})}<div style={half}/><div style={circle}/><div style={boxTop}/><div style={boxBottom}/></div>
   {autoReserves.length>0&&<div style={{display:"grid",gap:16,marginTop:12}}>
    <section className="clubSquadPanel" style={{padding:18}}>
-    <div className="clubSquadHead"><div><small>MAÇ KADROSU</small><h3>İlk 7 Yedek · 12–18</h3></div><span>{Math.min(7,autoReserves.length)} oyuncu</span></div>
-    {[{title:"İlk 5 Yedek · 12–16",items:autoReserves.slice(0,5),offset:0,bold:true},{title:"Ek 2 Yedek · 17–18",items:autoReserves.slice(5,7),offset:5,bold:false}].filter(group=>group.items.length>0).map(group=><div key={group.title} style={{border:"1px solid #294032",borderRadius:12,padding:14,background:"#101c15",marginTop:14}}>
-     <h4 style={{margin:"0 0 12px",color:"#9bcba7"}}>{group.title}</h4>
+    <div className="clubSquadHead"><div><small>YEDEKLER</small></div><span>{Math.min(7,autoReserves.length)} oyuncu</span></div>
+    {[{title:"",items:autoReserves.slice(0,5),offset:0,bold:true},{title:"",items:autoReserves.slice(5,7),offset:5,bold:false}].filter(group=>group.items.length>0).map(group=><div key={group.title} style={{border:"1px solid #294032",borderRadius:12,padding:14,background:"#101c15",marginTop:14}}>
+     
      <div className="clubSquadLabels"><span>OYUNCU</span><span>POZİSYON</span><span>YAŞ</span><span>disp<span style={{fontWeight:900}}>F</span>ics REYTİNG</span><span>DEĞER</span><span></span></div>
      <div className="clubSquadList">{group.items.map((p:any,i:number)=><button key={p.id} onClick={()=>router.push(`/scouting/${p.id}`)} className="clubSquadRow" style={group.bold?{fontWeight:800}:undefined}><span className="clubSquadPlayer">{p.avatar_url?<img src={p.avatar_url} alt=""/>:<i>{initials(p.name)}</i>}<b style={{fontWeight:group.bold?900:500}}>{12+group.offset+i}. {p.name}</b></span><span>{p.position||"—"}</span><span>{p.age??"—"}</span><strong>{displayRating(p.rating)}</strong><span>{formatMarketValue(p.marketValue)}</span><em>Detay →</em></button>)}</div>
     </div>)}
    </section>
    {autoReserves.length>7&&<section className="clubSquadPanel" style={{padding:18}}>
-    <div className="clubSquadHead"><div><small>KADRO DIŞI YEDEKLER</small><h3>Diğer Yedekler · 19+</h3></div><span>{autoReserves.length-7} oyuncu</span></div>
+    <div className="clubSquadHead"><div><small>REZERV TAKIM</small></div><span>{autoReserves.length-7} oyuncu</span></div>
     <div className="clubSquadLabels"><span>OYUNCU</span><span>POZİSYON</span><span>YAŞ</span><span>disp<span style={{fontWeight:900}}>F</span>ics REYTİNG</span><span>DEĞER</span><span></span></div>
     <div className="clubSquadList">{autoReserves.slice(7).map((p:any,i:number)=><button key={p.id} onClick={()=>router.push(`/scouting/${p.id}`)} className="clubSquadRow"><span className="clubSquadPlayer">{p.avatar_url?<img src={p.avatar_url} alt=""/>:<i>{initials(p.name)}</i>}<b style={{fontWeight:500}}>{19+i}. {p.name}</b></span><span>{p.position||"—"}</span><span>{p.age??"—"}</span><strong>{displayRating(p.rating)}</strong><span>{formatMarketValue(p.marketValue)}</span><em>Detay →</em></button>)}</div>
    </section>}
