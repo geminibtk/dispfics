@@ -24,7 +24,7 @@ function searchVariants(value:string){
 const SCOUT_FILTER_KEY="dispfics-scout-filters";
 type ScoutFilters={q:string;pos:string;min:string;gender:string;league:string;country:string;sort:string;maxOverall:string;minAge:string;maxAge:string;minValue:string;maxValue:string;sortDirection:string;offset:number;search:string};
 function savedScoutFilters():Partial<ScoutFilters>{
- try{const raw=sessionStorage.getItem(SCOUT_FILTER_KEY);return raw?JSON.parse(raw):{}}catch{return {}}
+ try{const raw=sessionStorage.getItem(SCOUT_FILTER_KEY);sessionStorage.removeItem(SCOUT_FILTER_KEY);return raw?JSON.parse(raw):{}}catch{return {}}
 }
 export default function Scouting(){
  const s=createClient(),router=useRouter();
