@@ -150,6 +150,18 @@ export function computeAutomaticLineup(
     if(!place(String(p.id),null,new Set(),new Set([String(p.id)])))selected=snapshot;
   }
 
+  // The top-11 rating cutoff is a preference, not a hard restriction:
+  // if it leaves vacancies, use the remaining squad in ranking order.
+  // A second pass can complete formations that need more specialised roles.
+  if(Object.keys(selected).length<slots.length){
+    for(const p of sorted.filter(p=>!byId.has(String(p.id))).sort(mainCmp)){
+      if(Object.keys(selected).length>=slots.length)break;
+      byId.set(String(p.id),p);
+      const snapshot={...selected};
+      if(!place(String(p.id),null,new Set(),new Set([String(p.id)])))selected=snapshot;
+    }
+  }
+
   for(const role of Array.from(relocatedRoles)){
     const same=slots.filter(x=>x.role===role);
     if(same.length<2)continue;
