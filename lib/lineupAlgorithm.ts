@@ -18,8 +18,6 @@ export function orderLineupReserves(
   const slots=roles.map(role=>({slot:role+"_"+(counts[role]=(counts[role]||0)+1),role}));
   type Chain={slot:string;role:string;members:string[]};
   const chains:Chain[]=slots.map(s=>({...s,members:selected[s.slot]?[String(selected[s.slot])]:[""]}));
-  const result:string[]=[];
-  const waiting:string[]=[];
   const firstPos=(id:string)=>getPositions(byId.get(id)||{})[0]||"";
   const cmpLow=(a:string,b:string)=>{
     const x=byId.get(a),y=byId.get(b);
@@ -28,31 +26,28 @@ export function orderLineupReserves(
       ||firstPos(b).localeCompare(firstPos(a),"tr");
   };
   const compatible=(id:string,chain:Chain)=>getPositions(byId.get(id)||{}).includes(chain.role);
-  // A position with no starter remains empty in the starting XI, but is
-  // still eligible to receive a substitute.
-  function insert(id:string,depth:number,seen:Set<string>):boolean{
-    const eligible=chains.filter(c=>compatible(id,c));
-    const free=eligible.filter(c=>c.members.length<=depth);
+  const slotOrder=(chain:Chain)=>slots.findIndex(s=>s.slot===chain.slot);
+  const starter=(chain:Chain)=>chain.members[0]||"";
+  const chainOrder=(a:Chain,b:Chain)=>cmpLow(starter(a),starter(b))||slotOrder(a)-slotOrder(b);
+
+  // Every layer is filled before moving to the next. Moving an occupant
+  // cannot return it to the same chain, and cannot leave gaps in a chain.
+  function insert(id:string,depth:number,seen:Set<string>,blocked:Set<string>):boolean{
+    const eligible=chains.filter(c=>!blocked.has(c.slot)&&compatible(id,c));
+    const free=eligible.filter(c=>c.members.length===depth).sort(chainOrder);
     if(free.length){
-      free.sort((a,b)=>{
-        const ax=a.members[depth-1],bx=b.members[depth-1];
-        if(!ax)return bx? -1:slots.findIndex(s=>s.slot===a.slot)-slots.findIndex(s=>s.slot===b.slot);
-        if(!bx)return 1;
-        return cmpLow(ax,bx)||slots.findIndex(s=>s.slot===a.slot)-slots.findIndex(s=>s.slot===b.slot);
-      });
       free[0].members.push(id);
       return true;
     }
-    // Try to move an existing occupant into another eligible chain.
     const targets=eligible.filter(c=>c.members.length>depth)
-      .sort((a,b)=>cmpLow(a.members[depth],b.members[depth])
-        ||slots.findIndex(s=>s.slot===a.slot)-slots.findIndex(s=>s.slot===b.slot));
+      .sort(chainOrder);
     for(const target of targets){
       const displaced=target.members[depth];
-      if(seen.has(displaced))continue;
+      if(!displaced||seen.has(displaced))continue;
       const snapshot=chains.map(c=>[...c.members]);
       target.members.splice(depth,1);
-      if(insert(displaced,depth,new Set(Array.from(seen).concat(displaced)))){
+      const nextBlocked=new Set(Array.from(blocked).concat(target.slot));
+      if(insert(displaced,depth,new Set(Array.from(seen).concat(displaced)),nextBlocked)){
         target.members.splice(depth,0,id);
         return true;
       }
@@ -60,17 +55,17 @@ export function orderLineupReserves(
     }
     return false;
   }
-  // Fill the first layer before starting deeper layers. Candidates that
-  // cannot be placed are retried after the remaining first-layer slots fill.
   let pending=[...candidates];
   for(let depth=1;pending.length&&depth<=squad.length;depth++){
     const deferred:any[]=[];
+    let placed=0;
     for(const p of pending){
-      if(insert(String(p.id),depth,new Set([String(p.id)])))result.push(String(p.id));
+      if(insert(String(p.id),depth,new Set([String(p.id)]),new Set()))placed++;
       else deferred.push(p);
     }
     pending=deferred;
-    if(!pending.length)break;
+    // Once a whole tier cannot accept anyone, no deeper tier can help.
+    if(!placed)break;
   }
   // Display reserves in their established tier, then by original player
   // ranking. Chain movement may change tiers, so derive the final tier.
