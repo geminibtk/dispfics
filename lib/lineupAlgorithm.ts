@@ -6,6 +6,83 @@ export function lineupMainCompare(a:any,b:any,getPositions:(p:any)=>string[]){
   return (ap[0]||"").localeCompare(bp[0]||"","tr");
 }
 
+export function orderLineupReserves(
+  squad:any[],selected:Record<string,string>,roles:readonly string[],
+  getPositions:(p:any)=>string[]
+){
+  const byId=new Map(squad.map(p=>[String(p.id),p]));
+  const occupied=new Set(Object.values(selected).filter(Boolean).map(String));
+  const candidates=squad.filter(p=>!occupied.has(String(p.id)))
+    .sort((a,b)=>lineupMainCompare(a,b,getPositions));
+  const counts:Record<string,number>={};
+  const slots=roles.map(role=>({slot:role+"_"+(counts[role]=(counts[role]||0)+1),role}));
+  type Chain={slot:string;role:string;members:string[]};
+  const chains:Chain[]=slots.map(s=>({...s,members:selected[s.slot]?[String(selected[s.slot])]:[]}));
+  const result:string[]=[];
+  const waiting:string[]=[];
+  const firstPos=(id:string)=>getPositions(byId.get(id)||{})[0]||"";
+  const cmpLow=(a:string,b:string)=>{
+    const x=byId.get(a),y=byId.get(b);
+    return Number(x?.rating||0)-Number(y?.rating||0)
+      ||getPositions(x||{}).length-getPositions(y||{}).length
+      ||firstPos(b).localeCompare(firstPos(a),"tr");
+  };
+  const compatible=(id:string,chain:Chain)=>getPositions(byId.get(id)||{}).includes(chain.role);
+  // A position with no starter remains empty in the starting XI, but is
+  // still eligible to receive a substitute.
+  function insert(id:string,depth:number,seen:Set<string>):boolean{
+    const eligible=chains.filter(c=>compatible(id,c));
+    const free=eligible.filter(c=>c.members.length<=depth);
+    if(free.length){
+      free.sort((a,b)=>{
+        const ax=a.members[depth-1],bx=b.members[depth-1];
+        if(!ax)return bx? -1:slots.findIndex(s=>s.slot===a.slot)-slots.findIndex(s=>s.slot===b.slot);
+        if(!bx)return 1;
+        return cmpLow(ax,bx)||slots.findIndex(s=>s.slot===a.slot)-slots.findIndex(s=>s.slot===b.slot);
+      });
+      free[0].members.push(id);
+      return true;
+    }
+    // Try to move an existing occupant into another eligible chain.
+    const targets=eligible.filter(c=>c.members.length>depth)
+      .sort((a,b)=>cmpLow(a.members[depth],b.members[depth])
+        ||slots.findIndex(s=>s.slot===a.slot)-slots.findIndex(s=>s.slot===b.slot));
+    for(const target of targets){
+      const displaced=target.members[depth];
+      if(seen.has(displaced))continue;
+      const snapshot=chains.map(c=>[...c.members]);
+      target.members.splice(depth,1);
+      if(insert(displaced,depth,new Set([...seen,displaced]))){
+        target.members.splice(depth,0,id);
+        return true;
+      }
+      chains.forEach((c,i)=>c.members=snapshot[i]);
+    }
+    return false;
+  }
+  // Fill the first layer before starting deeper layers. Candidates that
+  // cannot be placed are retried after the remaining first-layer slots fill.
+  let pending=[...candidates];
+  for(let depth=1;pending.length&&depth<=squad.length;depth++){
+    const deferred:any[]=[];
+    for(const p of pending){
+      if(insert(String(p.id),depth,new Set([String(p.id)])))result.push(String(p.id));
+      else deferred.push(p);
+    }
+    pending=deferred;
+    if(!pending.length)break;
+  }
+  // Display reserves in their established tier, then by original player
+  // ranking. Chain movement may change tiers, so derive the final tier.
+  const tier=new Map<string,number>();
+  chains.forEach(c=>c.members.forEach((id,i)=>{if(i>0)tier.set(id,i)}));
+  const rank=new Map(candidates.map((p,i)=>[String(p.id),i]));
+  return candidates.filter(p=>tier.has(String(p.id)))
+    .sort((a,b)=>(tier.get(String(a.id))||0)-(tier.get(String(b.id))||0)
+      ||(rank.get(String(a.id))||0)-(rank.get(String(b.id))||0))
+    .concat(candidates.filter(p=>!tier.has(String(p.id))));
+}
+
 export function computeAutomaticLineup(
   squad:any[],
   roles:readonly string[],
@@ -63,13 +140,9 @@ export function computeAutomaticLineup(
     return false;
   }
 
-  const reserves:any[]=[];
   for(const p of pool){
     const snapshot={...selected};
-    if(!place(String(p.id),null,new Set(),new Set([String(p.id)]))){
-      selected=snapshot;
-      reserves.push(p);
-    }
+    if(!place(String(p.id),null,new Set(),new Set([String(p.id)])))selected=snapshot;
   }
 
   for(const role of Array.from(relocatedRoles)){
@@ -79,5 +152,5 @@ export function computeAutomaticLineup(
       .sort((a,b)=>mainCmp(byId.get(a),byId.get(b)));
     same.forEach((x,i)=>{if(ids[i])selected[x.slot]=ids[i];else delete selected[x.slot]});
   }
-  return {selected,reserves};
+  return {selected,reserves:orderLineupReserves(squad,selected,roles,getPositions)};
 }
