@@ -52,7 +52,7 @@ export function orderLineupReserves(
       if(seen.has(displaced))continue;
       const snapshot=chains.map(c=>[...c.members]);
       target.members.splice(depth,1);
-      if(insert(displaced,depth,new Set([...seen,displaced]))){
+      if(insert(displaced,depth,new Set(Array.from(seen).concat(displaced)))){
         target.members.splice(depth,0,id);
         return true;
       }
