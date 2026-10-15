@@ -102,7 +102,7 @@ export default function Lineup(){
   {autoReserves.length>0&&<div style={{display:"grid",gap:16,marginTop:12}}>
    <section className="clubSquadPanel" style={{padding:18}}>
     <div className="clubSquadHead"><div><small>YEDEKLER</small></div><span>{Math.min(7,autoReserves.length)} oyuncu</span></div>
-    {[{title:"",items:autoReserves.slice(0,5),offset:0,bold:true},{title:"",items:autoReserves.slice(5,7),offset:5,bold:false}].filter(group=>group.items.length>0).map(group=><div key={group.title} style={{border:"1px solid #294032",borderRadius:12,padding:14,background:"#101c15",marginTop:14}}>
+    {[{title:"",items:autoReserves.slice(0,5),offset:0,bold:true},{title:"",items:autoReserves.slice(5,7),offset:5,bold:false}].filter(group=>group.items.length>0).map(group=><div key={group.offset} style={{border:"1px solid #294032",borderRadius:12,padding:14,background:"#101c15",marginTop:14}}>
      
      <div className="clubSquadLabels"><span>OYUNCU</span><span>POZİSYON</span><span>YAŞ</span><span>disp<span style={{fontWeight:900}}>F</span>ics REYTİNG</span><span>DEĞER</span><span></span></div>
      <div className="clubSquadList">{group.items.map((p:any,i:number)=><button key={p.id} onClick={()=>router.push(`/scouting/${p.id}`)} className="clubSquadRow" style={group.bold?{fontWeight:800}:undefined}><span className="clubSquadPlayer">{p.avatar_url?<img src={p.avatar_url} alt=""/>:<i>{initials(p.name)}</i>}<b style={{fontWeight:group.bold?900:500}}>{12+group.offset+i}. {p.name}</b></span><span>{p.position||"—"}</span><span>{p.age??"—"}</span><strong>{displayRating(p.rating)}</strong><span>{formatMarketValue(p.marketValue)}</span><em>Detay →</em></button>)}</div>
