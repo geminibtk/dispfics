@@ -153,3 +153,7 @@
 
 /* Preserve the explicit left-to-right column order in analysis player tables. */
 .analysisPlayerColumns > * { order: 0 !important; }
+
+/* Keep the complete home sidebar, including Settings, visible in the viewport. */
+main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
+@media(max-width:850px){main > aside{display:none}}
