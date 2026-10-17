@@ -15,8 +15,8 @@ export default function Players(){
  const [clubName,setClubName]=useState("");const [players,setPlayers]=useState<Player[]>([]);const [matches,setMatches]=useState<Match[]>([]);const [targets,setTargets]=useState<Target[]>([]);const [profile,setProfile]=useState<Profile|null>(null);const [formation,setFormation]=useState("");const [msg,setMsg]=useState("");const [loading,setLoading]=useState(true);const [tab,setTab]=useState("Genel Bakış");
  useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("tab");if(requested&&["Genel Bakış","Kadro","Maçlar","İstatistik","Transfer","Tarihçe"].includes(requested))setTab(requested)},[]);
  async function load(){
-  const {data:{user}}=await s.auth.getUser();if(!user){router.push("/login");return}
-  const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(!m){router.push("/onboarding");return}
+  const {data:{user}}=await s.auth.getUser();if(!user){setLoading(false);return}
+  const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(!m){setLoading(false);return}
   const {data:c}=await s.from("clubs").select("name").eq("id",m.club_id).maybeSingle();const name=c?.name||"";setClubName(name);
   const [ps,ms,ts,pr,ln]=await Promise.all([
    s.from("scouting_players").select("id,name,position,age,overall,estimated_value_eur,avatar_url,alternate_positions,gender").eq("is_active",true).eq("club",name).order("overall",{ascending:false}),
