@@ -6,7 +6,7 @@ import {createClient} from "../../lib/supabase";
 import AppShell from "../components/AppShell";
 
 type EAPlayer={id:number;overallRating:number;firstName:string;lastName:string;commonName?:string|null;leagueName?:string;avatarUrl?:string;team?:{label?:string};nationality?:{label?:string};position?:{shortLabel?:string;label?:string};stats?:Record<string,{value:number}>};
-type Row={id:number;name:string;club:string;league:string;nationality:string;position:string;overall:number;pace?:number;shooting?:number;passing?:number;dribbling?:number;defending?:number;physical?:number;avatarUrl?:string;age?:number;estimatedValue?:number;alternatePositions:string[];gender?:string;playStyles:string[];rank?:number};
+type Row={id:number;name:string;club:string;league:string;nationality:string;position:string;overall:number;pace?:number;shooting?:number;passing?:number;dribbling?:number;defending?:number;physical?:number;avatarUrl?:string;age?:number;estimatedValue?:number;alternatePositions:string[];playStyles:string[];rank?:number};
 
 const EA_URL="/api/ea-ratings";
 const PAGE_SIZE=200,TOTAL=17849; // global DB filtering and sorting
