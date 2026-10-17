@@ -15,9 +15,9 @@ export default function Players(){
  const [clubName,setClubName]=useState("");const [players,setPlayers]=useState<Player[]>([]);const [matches,setMatches]=useState<Match[]>([]);const [targets,setTargets]=useState<Target[]>([]);const [profile,setProfile]=useState<Profile|null>(null);const [formation,setFormation]=useState("");const [msg,setMsg]=useState("");const [loading,setLoading]=useState(true);const [tab,setTab]=useState("Genel Bakış");
  useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("tab");if(requested&&["Genel Bakış","Kadro","Maçlar","İstatistik","Transfer","Tarihçe"].includes(requested))setTab(requested)},[]);
  async function loadGuest(){
-  const {data,error}=await s.from("scouting_players").select("id,name,position,age,overall,estimated_value_eur,avatar_url,alternate_positions,gender").eq("is_active",true).order("overall",{ascending:false}).limit(200);
+  const {data,error}=await s.from("scouting_players").select("id,name,position,age,overall,estimated_value_eur,avatar_url,alternate_positions").eq("is_active",true).order("overall",{ascending:false}).limit(200);
   if(error)setMsg(error.message);
-  else setPlayers((data||[]).map((p:any)=>({id:p.id,name:p.name,position:p.position,age:p.age,rating:Number(p.overall||0),market_value:Number(p.estimated_value_eur||0),avatar_url:p.avatar_url,alternatePositions:Array.isArray(p.alternate_positions)?p.alternate_positions:[],genderId:p.gender?.id!=null?Number(p.gender.id):null})));
+  else setPlayers((data||[]).map((p:any)=>({id:p.id,name:p.name,position:p.position,age:p.age,rating:Number(p.overall||0),market_value:Number(p.estimated_value_eur||0),avatar_url:p.avatar_url,alternatePositions:Array.isArray(p.alternate_positions)?p.alternate_positions:[]})));
   setClubName("Futbolcu Havuzu");setLoading(false);
  }
  async function load(){
@@ -25,13 +25,13 @@ export default function Players(){
   const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(!m){await loadGuest();return}
   const {data:c}=await s.from("clubs").select("name").eq("id",m.club_id).maybeSingle();const name=c?.name||"";setClubName(name);
   const [ps,ms,ts,pr,ln]=await Promise.all([
-   s.from("scouting_players").select("id,name,position,age,overall,estimated_value_eur,avatar_url,alternate_positions,gender").eq("is_active",true).eq("club",name).order("overall",{ascending:false}),
+   s.from("scouting_players").select("id,name,position,age,overall,estimated_value_eur,avatar_url,alternate_positions").eq("is_active",true).eq("club",name).order("overall",{ascending:false}),
    s.from("matches").select("id,opponent,kickoff,home,goals_for,goals_against,competition,kickoff_time_known").eq("club_id",m.club_id).order("kickoff",{ascending:true}),
    s.from("transfer_targets").select("id,name,position,current_club,market_value,rating,priority,status").eq("club_id",m.club_id).order("created_at",{ascending:false}),
    s.from("club_profiles").select("*").eq("club_id",m.club_id).maybeSingle(),
    s.from("lineups").select("formation").eq("club_id",m.club_id).eq("is_active",true).limit(1).maybeSingle()
   ]);
-  if(ps.error)setMsg(ps.error.message);else setPlayers((ps.data||[]).map((p:any)=>({id:p.id,name:p.name,position:p.position,age:p.age,rating:Number(p.overall||0),market_value:Number(p.estimated_value_eur||0),avatar_url:p.avatar_url,alternatePositions:Array.isArray(p.alternate_positions)?p.alternate_positions:[],genderId:p.gender?.id!=null?Number(p.gender.id):null})));
+  if(ps.error)setMsg(ps.error.message);else setPlayers((ps.data||[]).map((p:any)=>({id:p.id,name:p.name,position:p.position,age:p.age,rating:Number(p.overall||0),market_value:Number(p.estimated_value_eur||0),avatar_url:p.avatar_url,alternatePositions:Array.isArray(p.alternate_positions)?p.alternate_positions:[]})));
   setMatches((ms.data||[]) as Match[]);setTargets((ts.data||[]).map((x:any)=>({...x,market_value:Number(x.market_value||0),rating:Number(x.rating||0)})));setProfile(pr.data as any);setFormation(ln.data?.formation||"");setLoading(false)
  }
  useEffect(()=>{load()},[]);
@@ -45,8 +45,7 @@ export default function Players(){
   const referenceIds=new Set(players.slice(0,11).map(p=>p.id));
   const referencePlayers=players.filter(p=>referenceIds.has(p.id)&&!suggestions.some(x=>x.playerName===p.name));
   const range=(key:"rating"|"age"|"market_value")=>{const nums=referencePlayers.map(p=>p[key]).filter((v):v is number=>typeof v==="number"&&Number.isFinite(v));return nums.length?{min:Math.min(...nums),max:Math.max(...nums)}:null};
-  const genderId=players.map(p=>p.genderId).find(v=>v===0||v===1)??null;
-  const plan={formation:aiRecommendation.name,type:required?"required":"upgrade",roles:Array.from(new Set(suggestions.map(x=>x.role))),targets:suggestions.map(x=>({role:x.role,playerId:players.find(p=>p.name===x.playerName)?.id||null,playerName:x.playerName})),genderId,rating:range("rating"),age:range("age"),value:range("market_value"),createdAt:Date.now()};
+  const plan={formation:aiRecommendation.name,type:required?"required":"upgrade",roles:Array.from(new Set(suggestions.map(x=>x.role))),targets:suggestions.map(x=>({role:x.role,playerId:players.find(p=>p.name===x.playerName)?.id||null,playerName:x.playerName})),rating:range("rating"),age:range("age"),value:range("market_value"),createdAt:Date.now()};
   sessionStorage.setItem("dispficsTransferRequest",JSON.stringify(plan));localStorage.removeItem("dispficsTransferRequest");router.push("/ai");
  }
  const played=matches.filter(x=>x.goals_for!=null&&x.goals_against!=null),wins=played.filter(x=>Number(x.goals_for)>Number(x.goals_against)).length,draws=played.filter(x=>x.goals_for===x.goals_against).length,losses=played.length-wins-draws;
