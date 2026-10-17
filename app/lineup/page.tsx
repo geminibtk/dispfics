@@ -90,7 +90,7 @@ export default function Lineup(){
 
  return <AppShell title="Aktif Kadro"><div style={{maxWidth:1050}}>
   <small style={{color:"#49ad60"}}>İLK 11 • {formation.name}</small>
-  <p style={{color:"#aab7af"}}>Dizilişi seçtiğiniz anda dispFics en iyi 11'i otomatik hesaplar.</p>
+  <p style={{color:"#aab7af"}}>Dizilişi seçtiğiniz anda YanımdaFutbol en iyi 11'i otomatik hesaplar.</p>
   {topFormation&&<div style={{...topFormationButton,cursor:"default"}}><span><b>{formation.name}{keys.filter(x=>x.name===formation.name).length>1?` • Varyasyon ${formation.variant}`:""}</b></span>{formationKey===topFormation.key&&<strong style={{color:"#9bcba7"}}>{aiFormation?"AI ÖNERİSİ":"TRANSFER GEREKLİ"}</strong>}</div>}
   {topFormation&&formationKey!==topFormation.key&&<button type="button" onClick={()=>changeFormation(topFormation.key)} style={{...input,cursor:"pointer",marginBottom:10}}>AI Önerisine Dön ↩</button>}
   <label style={{display:"block",maxWidth:360,margin:"10px 0"}}>Diğer Dizilişler
@@ -104,13 +104,13 @@ export default function Lineup(){
     <div className="clubSquadHead"><div><small>YEDEKLER</small></div><span>{Math.min(7,autoReserves.length)} oyuncu</span></div>
     {[{title:"",items:autoReserves.slice(0,5),offset:0,bold:true},{title:"",items:autoReserves.slice(5,7),offset:5,bold:false}].filter(group=>group.items.length>0).map(group=><div key={group.offset} style={{border:"1px solid #294032",borderRadius:12,padding:14,background:"#101c15",marginTop:14}}>
      
-     <div className="clubSquadLabels"><span>OYUNCU</span><span>POZİSYON</span><span>YAŞ</span><span>disp<span style={{fontWeight:900}}>F</span>ics REYTİNG</span><span>DEĞER</span><span></span></div>
+     <div className="clubSquadLabels"><span>OYUNCU</span><span>POZİSYON</span><span>YAŞ</span><span>YanımdaFutbol REYTİNG</span><span>DEĞER</span><span></span></div>
      <div className="clubSquadList">{group.items.map((p:any,i:number)=><button key={p.id} onClick={()=>router.push(`/scouting/${p.id}`)} className="clubSquadRow" style={group.bold?{fontWeight:800}:undefined}><span className="clubSquadPlayer">{p.avatar_url?<img src={p.avatar_url} alt=""/>:<i>{initials(p.name)}</i>}<b style={{fontWeight:group.bold?900:500}}>{p.name}</b></span><span>{p.position||"—"}</span><span>{p.age??"—"}</span><strong>{displayRating(p.rating)}</strong><span>{formatMarketValue(p.marketValue)}</span><em>Detay →</em></button>)}</div>
     </div>)}
    </section>
    {autoReserves.length>7&&<section className="clubSquadPanel" style={{padding:18}}>
     <div className="clubSquadHead"><div><small>REZERV TAKIM</small></div><span>{autoReserves.length-7} oyuncu</span></div>
-    <div className="clubSquadLabels"><span>OYUNCU</span><span>POZİSYON</span><span>YAŞ</span><span>disp<span style={{fontWeight:900}}>F</span>ics REYTİNG</span><span>DEĞER</span><span></span></div>
+    <div className="clubSquadLabels"><span>OYUNCU</span><span>POZİSYON</span><span>YAŞ</span><span>YanımdaFutbol REYTİNG</span><span>DEĞER</span><span></span></div>
     <div className="clubSquadList">{autoReserves.slice(7).map((p:any,i:number)=><button key={p.id} onClick={()=>router.push(`/scouting/${p.id}`)} className="clubSquadRow"><span className="clubSquadPlayer">{p.avatar_url?<img src={p.avatar_url} alt=""/>:<i>{initials(p.name)}</i>}<b style={{fontWeight:500}}>{p.name}</b></span><span>{p.position||"—"}</span><span>{p.age??"—"}</span><strong>{displayRating(p.rating)}</strong><span>{formatMarketValue(p.marketValue)}</span><em>Detay →</em></button>)}</div>
    </section>}
   </div>}
