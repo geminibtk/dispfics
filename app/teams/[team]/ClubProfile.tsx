@@ -5,8 +5,6 @@ type ClubProfile={founded?:string;stadium?:string;coach?:string;chairman?:string
 const properties:{key:keyof ClubProfile;pid:string;label:string}[]=[
  {key:"founded",pid:"P571",label:"Kuruluş"},
  {key:"stadium",pid:"P115",label:"Stadyum"},
- {key:"coach",pid:"P286",label:"Teknik direktör"},
- {key:"chairman",pid:"P488",label:"Başkan"},
  {key:"city",pid:"P131",label:"Şehir / Konum"},
  {key:"country",pid:"P17",label:"Ülke"},
  {key:"website",pid:"P856",label:"Resmî site"}
@@ -47,17 +45,13 @@ export default function ClubProfile({name,league}:{name:string;league:string}){
  return()=>{active=false}
  },[name]);
  const fields=properties.filter(p=>p.key!=="website"&&profile?.[p.key]);
- return <div className="module"><h2>Kulüp Profili</h2><p>{name} hakkında kulüp bilgileri</p>
+ return <div className="module"><h2>Kulüp Profili</h2><p>Kulübün temel bilgileri</p>
  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:12,marginTop:20}}>
- <div style={{border:"1px solid #294032",borderRadius:12,padding:18}}><small style={{color:"#8fa399"}}>Kulüp</small><h3>{name}</h3></div>
- <div style={{border:"1px solid #294032",borderRadius:12,padding:18}}><small style={{color:"#8fa399"}}>Lig</small><h3>{league||"—"}</h3></div>
  {fields.map(p=><div key={p.pid} style={{border:"1px solid #294032",borderRadius:12,padding:18}}><small style={{color:"#8fa399"}}>{p.label}</small><h3>{profile?.[p.key]}</h3></div>)}
  </div>
  {loading?<p style={{marginTop:20}}>Kulüp bilgileri getiriliyor…</p>:<div style={{marginTop:20,display:"flex",gap:16,flexWrap:"wrap"}}>
  {profile?.website&&<a href={profile.website} target="_blank" rel="noopener noreferrer">Resmî web sitesi ↗</a>}
- {profile?.wiki&&<a href={profile.wiki} target="_blank" rel="noopener noreferrer">Kulüp hakkında daha fazla bilgi ↗</a>}
  {!fields.length&&<p>Bu kulüp için doğrulanabilir ek profil bilgisi bulunamadı.</p>}
- <small style={{color:"#8fa399",width:"100%"}}>Kulüp profili: Wikidata. Eksik bilgiler tahmin edilmez.</small>
  </div>}
  </div>
 }
