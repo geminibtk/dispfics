@@ -1,7 +1,7 @@
 "use client";
 import {displayRating} from "../../lib/display-rating";
 import {useEffect,useMemo,useRef,useState} from "react";
-import {useRouter,useSearchParams} from "next/navigation";
+import {useRouter} from "next/navigation";
 import {createClient} from "../../lib/supabase";
 import {computeAutomaticLineup} from "../../lib/lineupAlgorithm";
 import AppShell from "../components/AppShell";
@@ -42,7 +42,7 @@ const LABELS:Record<string,string>={KL:"Kaleci",STP:"Stoper",SGB:"Sağ Bek",SLB:
 const keys=FORMATIONS.map((f,i)=>({key:f[0]+"|"+i,name:f[0],roles:f[1],variant:FORMATIONS.slice(0,i).filter(x=>x[0]===f[0]).length+1}));
 
 export default function Lineup(){
- const s=createClient(),router=useRouter(),searchParams=useSearchParams(),teamName=searchParams.get("team")||"",teamLeague=searchParams.get("league")||"";
+ const s=createClient(),router=useRouter(),[teamContext,setTeamContext]=useState({team:"",league:""}),teamName=teamContext.team,teamLeague=teamContext.league;
  const [players,setPlayers]=useState<any[]>([]),[lineup,setLineup]=useState<any>(null);
  const [selected,setSelected]=useState<Record<string,string>>({}),[autoReserves,setAutoReserves]=useState<any[]>([]);
  const [activeSlot,setActiveSlot]=useState<string|null>(null),[formationKey,setFormationKey]=useState(""),[otherFormationKey,setOtherFormationKey]=useState(""),[msg,setMsg]=useState("");
@@ -74,6 +74,7 @@ export default function Lineup(){
   if(!l){const x=await s.from("lineups").insert({club_id:m.club_id,name:"İlk 11",formation:"3-4-2-1"}).select().single();l=x.data}
   setLineup(l);
  }
+ useEffect(()=>{const params=new URLSearchParams(window.location.search);setTeamContext({team:params.get("team")||"",league:params.get("league")||""})},[]);
  useEffect(()=>{topInitialized.current=false;setPlayers([]);setSelected({});setAutoReserves([]);setFormationKey("");setOtherFormationKey("");setLineup(null);setGuestMode(false);setMsg("");load()},[teamName,teamLeague]);
 
  function normPos(v:any){return String(v||"").toLocaleUpperCase("tr-TR").replace(/Ğ/g,"G").replace(/İ/g,"I").replace(/Ş/g,"S").replace(/Ü/g,"U").replace(/Ö/g,"O").replace(/Ç/g,"C")}
