@@ -9,7 +9,7 @@ type EAPlayer={id:number;overallRating:number;firstName:string;lastName:string;c
 type Row={id:number;name:string;club:string;league:string;nationality:string;position:string;overall:number;pace?:number;shooting?:number;passing?:number;dribbling?:number;defending?:number;physical?:number;avatarUrl?:string;age?:number;estimatedValue?:number;alternatePositions:string[];gender?:string;playStyles:string[];rank?:number};
 
 const EA_URL="/api/ea-ratings";
-const PAGE_SIZE=200,TOTAL=19789; // global DB filtering and sorting
+const PAGE_SIZE=200,TOTAL=17849; // global DB filtering and sorting
 function searchVariants(value:string){
  const raw=value.trim();
  if(!raw)return [];
@@ -22,7 +22,7 @@ function searchVariants(value:string){
 }
 
 const SCOUT_FILTER_KEY="dispfics-scout-filters";
-type ScoutFilters={q:string;pos:string;min:string;gender:string;league:string;country:string;sort:string;maxOverall:string;minAge:string;maxAge:string;minValue:string;maxValue:string;sortDirection:string;offset:number;search:string};
+type ScoutFilters={q:string;pos:string;min:string;league:string;country:string;sort:string;maxOverall:string;minAge:string;maxAge:string;minValue:string;maxValue:string;sortDirection:string;offset:number;search:string};
 function savedScoutFilters():Partial<ScoutFilters>{
  try{const raw=sessionStorage.getItem(SCOUT_FILTER_KEY);sessionStorage.removeItem(SCOUT_FILTER_KEY);return raw?JSON.parse(raw):{}}catch{return {}}
 }
@@ -30,18 +30,17 @@ export default function Scouting(){
  const s=createClient(),router=useRouter();
  const [saved]=useState(savedScoutFilters);
  const [rows,setRows]=useState<Row[]>([]),[q,setQ]=useState(saved.q||""),[pos,setPos]=useState(saved.pos||""),[min,setMin]=useState(saved.min||""),[msg,setMsg]=useState(""),[offset,setOffset]=useState(saved.offset||0),[loading,setLoading]=useState(true),[allCountries,setAllCountries]=useState<string[]>([]),[allLeagues,setAllLeagues]=useState<string[]>([]),[allPositions,setAllPositions]=useState<string[]>([]),[resultTotal,setResultTotal]=useState(TOTAL);
- const [gender,setGender]=useState(saved.gender||""),[league,setLeague]=useState(saved.league||""),[country,setCountry]=useState(saved.country||""),[sort,setSort]=useState(saved.sort||"overall"),[maxOverall,setMaxOverall]=useState(saved.maxOverall||""),[minAge,setMinAge]=useState(saved.minAge||""),[maxAge,setMaxAge]=useState(saved.maxAge||""),[minValue,setMinValue]=useState(saved.minValue||""),[maxValue,setMaxValue]=useState(saved.maxValue||""),[sortDirection,setSortDirection]=useState(saved.sortDirection||"desc");
+ [league,setLeague]=useState(saved.league||""),[country,setCountry]=useState(saved.country||""),[sort,setSort]=useState(saved.sort||"overall"),[maxOverall,setMaxOverall]=useState(saved.maxOverall||""),[minAge,setMinAge]=useState(saved.minAge||""),[maxAge,setMaxAge]=useState(saved.maxAge||""),[minValue,setMinValue]=useState(saved.minValue||""),[maxValue,setMaxValue]=useState(saved.maxValue||""),[sortDirection,setSortDirection]=useState(saved.sortDirection||"desc");
  async function load(next=0, search=q.trim()){
   setLoading(true);setMsg("");
   
   try{
-   let query=s.from("scouting_players_ranked").select("external_id,name,club,league,nationality,position,overall,pace,shooting,passing,dribbling,defending,physical,avatar_url,age,estimated_value_eur,alternate_positions,gender,player_abilities,rank,playable_position_count",{count:"exact"}).eq("is_active",true);
+   let query=s.from("scouting_players_ranked").select("external_id,name,club,league,nationality,position,overall,pace,shooting,passing,dribbling,defending,physical,avatar_url,age,estimated_value_eur,alternate_positions,player_abilities,rank,playable_position_count",{count:"exact"}).eq("is_active",true);
    if(search){
     const safe=searchVariants(search).map(x=>x.replace(/[,%()]/g,"")).filter(Boolean);
     const terms=safe.flatMap(x=>[`name.ilike.%${x}%`,`club.ilike.%${x}%`,`nationality.ilike.%${x}%`]);
     query=query.or(terms.join(","));
    }
-   if(gender)query=query.contains("gender",{label:gender});
    if(league)query=query.eq("league",league);
    if(country)query=query.eq("nationality",country);
    if(pos)query=query.or(`position.eq.${pos},alternate_positions.cs.[{"shortLabel":"${pos}"}]`);
@@ -62,14 +61,14 @@ export default function Scouting(){
     }
     const {data,error,count}=await query.order("name",{ascending:true}).range(next,next+PAGE_SIZE-1);
    if(error)throw error;
-   setRows((data||[]).map((x:any)=>({id:Number(x.external_id),name:x.name,club:x.club||"—",league:x.league||"—",nationality:x.nationality||"—",position:x.position||"—",overall:x.overall,pace:x.pace,shooting:x.shooting,passing:x.passing,dribbling:x.dribbling,defending:x.defending,physical:x.physical,avatarUrl:x.avatar_url,age:x.age,estimatedValue:x.estimated_value_eur!=null?Number(x.estimated_value_eur):undefined,alternatePositions:Array.isArray(x.alternate_positions)?x.alternate_positions.map((p:any)=>p?.shortLabel||p?.label).filter(Boolean):[],gender:x.gender?.label,playStyles:Array.isArray(x.player_abilities)?x.player_abilities.map((p:any)=>String(p?.label||"").trim()).filter(Boolean):[],rank:x.rank})));
+   setRows((data||[]).map((x:any)=>({id:Number(x.external_id),name:x.name,club:x.club||"—",league:x.league||"—",nationality:x.nationality||"—",position:x.position||"—",overall:x.overall,pace:x.pace,shooting:x.shooting,passing:x.passing,dribbling:x.dribbling,defending:x.defending,physical:x.physical,avatarUrl:x.avatar_url,age:x.age,estimatedValue:x.estimated_value_eur!=null?Number(x.estimated_value_eur):undefined,alternatePositions:Array.isArray(x.alternate_positions)?x.alternate_positions.map((p:any)=>p?.shortLabel||p?.label).filter(Boolean):[],playStyles:Array.isArray(x.player_abilities)?x.player_abilities.map((p:any)=>String(p?.label||"").trim()).filter(Boolean):[],rank:x.rank})));
    setOffset(next);setResultTotal(count||0);
   }catch(e){setRows([]);setMsg(e instanceof Error?e.message:"Oyuncular yüklenemedi.");}
   finally{setLoading(false)}
  }
  useEffect(()=>{load(saved.offset||0,saved.search??saved.q??"");(async()=>{const {data}=await s.from("scouting_players").select("nationality,league,position,alternate_positions").eq("is_active",true);if(data){setAllCountries(Array.from(new Set(data.map((x:any)=>x.nationality).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"tr")));setAllLeagues(Array.from(new Set(data.map((x:any)=>x.league).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"tr")));setAllPositions(Array.from(new Set(data.flatMap((x:any)=>[x.position,...(Array.isArray(x.alternate_positions)?x.alternate_positions.map((p:any)=>p?.shortLabel||p?.label):[])].filter(Boolean)))).sort((a,b)=>a.localeCompare(b,"tr")))}})()},[]);
  function openPlayer(playerId:number){
-  try{sessionStorage.setItem(SCOUT_FILTER_KEY,JSON.stringify({q,pos,min,gender,league,country,sort,maxOverall,minAge,maxAge,minValue,maxValue,sortDirection,offset,search:q.trim()} satisfies ScoutFilters))}catch{}
+  try{sessionStorage.setItem(SCOUT_FILTER_KEY,JSON.stringify({q,pos,min,league,country,sort,maxOverall,minAge,maxAge,minValue,maxValue,sortDirection,offset,search:q.trim()} satisfies ScoutFilters))}catch{}
   router.push(`/scouting/${playerId}`);
  }
  const list=rows;
@@ -82,7 +81,7 @@ export default function Scouting(){
   <div className="scoutFilters"><input placeholder="Oyuncu, takım veya ülke ara" value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")load(0,q.trim())}} style={input}/><button onClick={()=>load(0,q.trim())} disabled={loading} style={button}>Ara</button><button onClick={syncEA} disabled={loading} style={navButton}>{loading?"İşleniyor…":"YanımdaFutbol Verilerini Senkronize Et"}</button></div>
   <details className="scoutAdvanced" open><summary>Filtrele ve Sırala</summary><div className="scoutAdvancedGrid scoutFilterLayout">
    <label style={{gridColumn:"1 / -1"}}><div style={{whiteSpace:"nowrap"}}>disp<b style={{fontWeight:900}}>F</b>ics Reyting</div><span style={{display:"flex",gap:6}}><input type="number" min="1" max="100" placeholder="Min" value={min} onChange={e=>setMin(e.target.value)} style={input}/><input type="number" min="1" max="100" placeholder="Max" value={maxOverall} onChange={e=>setMaxOverall(e.target.value)} style={input}/></span></label>
-   <label>Cinsiyet<select value={gender} onChange={e=>setGender(e.target.value)} style={input}><option value="">Tümü</option><option>Erkek Futbolu</option><option>Kadın Futbolu</option></select></label>
+   
    <label>Konum<select value={pos} onChange={e=>setPos(e.target.value)} style={input}><option value="">Tüm Konumlar</option>{positions.map(x=><option key={x}>{x}</option>)}</select></label>
    <label>Ligler<select value={league} onChange={e=>setLeague(e.target.value)} style={input}><option value="">Tüm Ligler</option>{leagues.map(x=><option key={x}>{x}</option>)}</select></label>
    <label>Ülke<select value={country} onChange={e=>setCountry(e.target.value)} style={input}><option value="">Tüm Ülkeler</option>{countries.map(x=><option key={x}>{x}</option>)}</select></label>
