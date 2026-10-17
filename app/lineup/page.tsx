@@ -1,7 +1,7 @@
 "use client";
 import {displayRating} from "../../lib/display-rating";
 import {useEffect,useMemo,useRef,useState} from "react";
-import {useRouter} from "next/navigation";
+import {useRouter,useSearchParams} from "next/navigation";
 import {createClient} from "../../lib/supabase";
 import {computeAutomaticLineup} from "../../lib/lineupAlgorithm";
 import AppShell from "../components/AppShell";
@@ -42,13 +42,13 @@ const LABELS:Record<string,string>={KL:"Kaleci",STP:"Stoper",SGB:"Sağ Bek",SLB:
 const keys=FORMATIONS.map((f,i)=>({key:f[0]+"|"+i,name:f[0],roles:f[1],variant:FORMATIONS.slice(0,i).filter(x=>x[0]===f[0]).length+1}));
 
 export default function Lineup(){
- const s=createClient(),router=useRouter();
+ const s=createClient(),router=useRouter(),searchParams=useSearchParams(),teamName=searchParams.get("team")||"",teamLeague=searchParams.get("league")||"";
  const [players,setPlayers]=useState<any[]>([]),[lineup,setLineup]=useState<any>(null);
  const [selected,setSelected]=useState<Record<string,string>>({}),[autoReserves,setAutoReserves]=useState<any[]>([]);
  const [activeSlot,setActiveSlot]=useState<string|null>(null),[formationKey,setFormationKey]=useState(""),[otherFormationKey,setOtherFormationKey]=useState(""),[msg,setMsg]=useState("");
  const topInitialized=useRef(false);
  const [guestMode,setGuestMode]=useState(false);
- const GUEST_LINEUP_KEY="yanimdafutbol-guest-lineup";
+ const GUEST_LINEUP_KEY=teamName?"yanimdafutbol-team-lineup:"+teamLeague+":"+teamName:"yanimdafutbol-guest-lineup";
  type TransferTarget={role:string;playerId:string|null;playerName:string|null};
  type TransferPlan={type:"required"|"upgrade";roles:string[];targets:TransferTarget[];rating:{min:number,max:number}|null;age:{min:number,max:number}|null;value:{min:number,max:number}|null};
  const formation=useMemo(()=>keys.find(x=>x.key===formationKey)||keys.find(x=>x.name==="3-4-2-1")||keys[0],[formationKey]);
@@ -56,13 +56,14 @@ export default function Lineup(){
 
  async function loadGuest(){
   setGuestMode(true);
-  const {data,error}=await s.from("scouting_players").select("id,name,position,alternate_positions,overall,age,estimated_value_eur,avatar_url").eq("is_active",true).order("overall",{ascending:false}).limit(200);
+  let query=s.from("scouting_players").select("id,name,position,alternate_positions,overall,age,estimated_value_eur,avatar_url").eq("is_active",true);if(teamName){query=query.eq("club",teamName);if(teamLeague)query=query.eq("league",teamLeague)}const {data,error}=await query.order("overall",{ascending:false}).limit(teamName?1000:200);
   if(error){setMsg("Oyuncular yüklenemedi: "+error.message);return}
   const squad=(data||[]).map((x:any)=>({id:String(x.id),name:x.name,position:x.position,alternatePositions:Array.isArray(x.alternate_positions)?x.alternate_positions:[],rating:Number(x.overall||0),age:x.age!=null?Number(x.age):null,marketValue:x.estimated_value_eur!=null?Number(x.estimated_value_eur):null,avatar_url:x.avatar_url||null,source:"scouting"}));
   try{const saved=JSON.parse(localStorage.getItem(GUEST_LINEUP_KEY)||"null");if(saved?.formationKey&&saved?.selected){const f=keys.find(x=>x.key===saved.formationKey);if(f){topInitialized.current=true;setFormationKey(f.key);setSelected(saved.selected);setOtherFormationKey(saved.otherFormationKey||"");setMsg("Cihazdaki kayıtlı kadro yüklendi.")}}}catch{}
   setPlayers(squad);
  }
  async function load(){
+  if(teamName){await loadGuest();return}
   const {data:{user}}=await s.auth.getUser();if(!user){await loadGuest();return}
   const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(!m){await loadGuest();return}
   const {data:club}=await s.from("clubs").select("name").eq("id",m.club_id).maybeSingle();let squad:any[]=[];
@@ -73,7 +74,7 @@ export default function Lineup(){
   if(!l){const x=await s.from("lineups").insert({club_id:m.club_id,name:"İlk 11",formation:"3-4-2-1"}).select().single();l=x.data}
   setLineup(l);
  }
- useEffect(()=>{load()},[]);
+ useEffect(()=>{topInitialized.current=false;setPlayers([]);setSelected({});setAutoReserves([]);setFormationKey("");setOtherFormationKey("");setLineup(null);setGuestMode(false);setMsg("");load()},[teamName,teamLeague]);
 
  function normPos(v:any){return String(v||"").toLocaleUpperCase("tr-TR").replace(/Ğ/g,"G").replace(/İ/g,"I").replace(/Ş/g,"S").replace(/Ü/g,"U").replace(/Ö/g,"O").replace(/Ç/g,"C")}
  function playerPositions(p:any){const raw=[p.position,...(p.alternatePositions||[]).map((x:any)=>typeof x==="string"?x:(x?.shortLabel||x?.label))];return raw.map(normPos).filter(Boolean).filter((v:string,i:number,a:string[])=>a.indexOf(v)===i)}
@@ -99,7 +100,7 @@ export default function Lineup(){
   setMsg("İlk 11 ve diziliş kaydedildi.");
  }
 
- return <AppShell title="Aktif Kadro"><div style={{maxWidth:1050}}>
+ return <AppShell title={teamName?teamName+" • Aktif Kadro":"Aktif Kadro"}><div style={{maxWidth:1050}}>{teamName&&<button type="button" onClick={()=>router.push("/teams/"+encodeURIComponent(teamName)+"?league="+encodeURIComponent(teamLeague))} style={{...input,maxWidth:260,cursor:"pointer",marginBottom:14}}>← {teamName} Oyuncuları</button>}
   <button type="button" onClick={save} style={{...input,maxWidth:260,cursor:"pointer",marginBottom:14,background:"#215c38"}}>Kadroyu Kaydet</button>
   <small style={{color:"#49ad60"}}>İLK 11 • {formation.name}</small>
   <p style={{color:"#aab7af"}}>Dizilişi seçtiğiniz anda YanımdaFutbol en iyi 11'i otomatik hesaplar.</p>
