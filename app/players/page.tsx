@@ -14,9 +14,15 @@ export default function Players(){
  const s=createClient(),router=useRouter();
  const [clubName,setClubName]=useState("");const [players,setPlayers]=useState<Player[]>([]);const [matches,setMatches]=useState<Match[]>([]);const [targets,setTargets]=useState<Target[]>([]);const [profile,setProfile]=useState<Profile|null>(null);const [formation,setFormation]=useState("");const [msg,setMsg]=useState("");const [loading,setLoading]=useState(true);const [tab,setTab]=useState("Genel Bakış");
  useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("tab");if(requested&&["Genel Bakış","Kadro","Maçlar","İstatistik","Transfer","Tarihçe"].includes(requested))setTab(requested)},[]);
+ async function loadGuest(){
+  const {data,error}=await s.from("scouting_players").select("id,name,position,age,overall,estimated_value_eur,avatar_url,alternate_positions,gender").eq("is_active",true).order("overall",{ascending:false}).limit(200);
+  if(error)setMsg(error.message);
+  else setPlayers((data||[]).map((p:any)=>({id:p.id,name:p.name,position:p.position,age:p.age,rating:Number(p.overall||0),market_value:Number(p.estimated_value_eur||0),avatar_url:p.avatar_url,alternatePositions:Array.isArray(p.alternate_positions)?p.alternate_positions:[],genderId:p.gender?.id!=null?Number(p.gender.id):null})));
+  setClubName("Futbolcu Havuzu");setLoading(false);
+ }
  async function load(){
-  const {data:{user}}=await s.auth.getUser();if(!user){setLoading(false);return}
-  const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(!m){setLoading(false);return}
+  const {data:{user}}=await s.auth.getUser();if(!user){await loadGuest();return}
+  const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(!m){await loadGuest();return}
   const {data:c}=await s.from("clubs").select("name").eq("id",m.club_id).maybeSingle();const name=c?.name||"";setClubName(name);
   const [ps,ms,ts,pr,ln]=await Promise.all([
    s.from("scouting_players").select("id,name,position,age,overall,estimated_value_eur,avatar_url,alternate_positions,gender").eq("is_active",true).eq("club",name).order("overall",{ascending:false}),
