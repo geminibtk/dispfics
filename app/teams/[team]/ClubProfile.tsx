@@ -37,7 +37,7 @@ export default function ClubProfile({name,league}:{name:string;league:string}){
    else if(claim.id){(output as any)[prop.key]=claim.id;ids.push(claim.id)}
   }
   if(ids.length){
-   const names=await getData({action:"wbgetentities",ids:[...new Set(ids)].join("|"),props:"labels",languages:"tr|en"});
+   const names=await getData({action:"wbgetentities",ids:Array.from(new Set(ids)).join("|"),props:"labels",languages:"tr|en"});
    for(const prop of properties){const id=output[prop.key];if(id&&names.entities?.[id]){(output as any)[prop.key]=names.entities[id].labels?.tr?.value||names.entities[id].labels?.en?.value||"—"}}
   }
   const title=entity?.sitelinks?.trwiki?.title||entity?.sitelinks?.enwiki?.title;
