@@ -103,7 +103,7 @@ export default function Lineup(){
 
  return <AppShell title={teamName?teamName+" • Aktif Kadro":"Aktif Kadro"} hideTitle><div style={{maxWidth:1050}}>{teamName&&<button type="button" className="playerBack" onClick={()=>router.push("/teams")}>← Takımlar</button>}
   
-  {teamName&&<div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20,padding:"16px 18px",border:"1px solid #294032",borderRadius:14,background:"#101b15"}}><TeamLogo name={teamName}/><div><h2 style={{margin:0,fontSize:24}}>{teamName}</h2>{teamLeague&&<small style={{color:"#9bcba7"}}>{teamLeague}</small>}</div></div>}
+  
   <small style={{color:"#49ad60"}}>İLK 11 • {formation.name}</small>
   <p style={{color:"#aab7af"}}>Dizilişi seçtiğiniz anda YanımdaFutbol en iyi 11'i otomatik hesaplar.</p>
   {topFormation&&<div style={{...topFormationButton,cursor:"default"}}><span><b>{formation.name}{keys.filter(x=>x.name===formation.name).length>1?` • Varyasyon ${formation.variant}`:""}</b></span>{formationKey===topFormation.key&&<strong style={{color:"#9bcba7"}}>{"AI ÖNERİSİ"}</strong>}</div>}
