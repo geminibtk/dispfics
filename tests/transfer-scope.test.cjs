@@ -3,7 +3,7 @@ const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const ts=require("typescript");
 require.extensions[".ts"]=(mod,file)=>mod._compile(ts.transpileModule(fs.readFileSync(file,"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2019}}).outputText,file);
-const {selectTransferClub,uniqueScoutingMatch}=require("../lib/transfer-scope.ts");
+const {selectTransferClub,uniqueScoutingMatch,selectSingleMembershipClub}=require("../lib/transfer-scope.ts");
 const clubs=[{id:"club-a",name:"Team A"},{id:"club-b",name:"Team B"}];
 test("Team context only resolves a membership club",()=>{
  assert.equal(selectTransferClub(clubs,"Team B"),"club-b");
@@ -20,4 +20,11 @@ test("Scouting lookup never selects an ambiguous same-name player",()=>{
  assert.equal(uniqueScoutingMatch({name:"Player",current_club:"Team B"},players).id,"two");
  assert.equal(uniqueScoutingMatch({name:"Player",current_club:null},players),undefined);
  assert.equal(uniqueScoutingMatch({name:"Player",current_club:"Unknown"},players),undefined);
+});
+
+test("Shortlist addition selects only exactly one distinct membership",()=>{
+ assert.equal(selectSingleMembershipClub([]),"");
+ assert.equal(selectSingleMembershipClub([{club_id:"club-a"}]),"club-a");
+ assert.equal(selectSingleMembershipClub([{club_id:"club-a"},{club_id:"club-a"}]),"club-a");
+ assert.equal(selectSingleMembershipClub([{club_id:"club-a"},{club_id:"club-b"}]),"");
 });
