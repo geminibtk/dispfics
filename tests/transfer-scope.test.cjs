@@ -28,3 +28,5 @@ test("Shortlist addition selects only exactly one distinct membership",()=>{
  assert.equal(selectSingleMembershipClub([{club_id:"club-a"},{club_id:"club-a"}]),"club-a");
  assert.equal(selectSingleMembershipClub([{club_id:"club-a"},{club_id:"club-b"}]),"");
 });
+
+test("Scouting add requires club selection for multiple memberships",()=>{const src=fs.readFileSync(require("node:path").join(__dirname,"../app/scouting/[id]/page.tsx"),"utf8");assert.ok(src.includes("options.find(c=>c.id===transferClubId)?.id"));assert.ok(src.includes("ids.includes(String(c.id))"));assert.ok(src.includes("Kulüp seçin"));});
