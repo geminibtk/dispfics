@@ -76,7 +76,35 @@ export default function Scouting(){
  const countries=allCountries;
  const positions=allPositions;
  async function syncEA(){setLoading(true);setMsg("FC27 oyuncuları senkronize ediliyor…");const {data:{session}}=await s.auth.getSession();if(!session){setMsg("Senkronizasyon için yetkili oturum gerekli.");setLoading(false);return}try{const headers={Authorization:`Bearer ${session.access_token}`};const r=await fetch("/api/ea-sync",{method:"POST",headers});const j=await r.json();if(!r.ok)throw new Error(j.error||"FC27 senkronizasyonu başarısız.");setMsg(`${j.synced?.toLocaleString("tr-TR")||0} oyuncu senkronize edildi. Eski EA boy/kilo verileri eşleştiriliyor…`);const br=await fetch("/api/ea-physical-backfill",{method:"POST",headers});const bj=await br.json();if(!br.ok)throw new Error(`FC27 senkronize edildi ancak boy/kilo backfill başarısız: ${bj.error||"Bilinmeyen hata"}`);setMsg(`${j.synced?.toLocaleString("tr-TR")||0} FC27 oyuncusu senkronize edildi. Boy/kilo: ${bj.updated?.toLocaleString("tr-TR")||0} oyuncu eski EA verisinden tamamlandı; ${bj.unmatched?.toLocaleString("tr-TR")||0} eşleşmedi; ${bj.ambiguous?.toLocaleString("tr-TR")||0} belirsiz.`);await load(0,q.trim())}catch(e){setMsg(e instanceof Error?e.message:"Senkronizasyon başarısız.")}finally{setLoading(false)}}
- async function shortlist(x:Row){const {data:{user}}=await s.auth.getUser();if(!user){addGuestTransfer({id:x.id,name:x.name,club:x.club,position:x.position,age:x.age,estimated_value_eur:x.estimatedValue,overall:x.overall});setMsg(x.name+" Transfer Merkezi'ne eklendi.");return;}const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).limit(1).maybeSingle();if(!m){addGuestTransfer({id:x.id,name:x.name,club:x.club,position:x.position,age:x.age,estimated_value_eur:x.estimatedValue,overall:x.overall});setMsg(x.name+" Transfer Merkezi'ne eklendi.");return;}const {error}=await s.from("transfer_targets").insert({club_id:m.club_id,name:x.name,position:x.position,current_club:x.club,market_value:0,rating:x.overall/10,priority:"medium",notes:"Oyuncu Keşfi görünümünden aday listesine eklendi"});setMsg(error?error.message:x.name+" aday listesine eklendi.")}
+ async function shortlist(x:Row){
+  let team="";
+  try{team=String(JSON.parse(sessionStorage.getItem("yf-selected-team")||"{}").team||"").trim()}catch{}
+  if(!team){setMsg("Önce Takımlar sayfasından bir takım seçmelisin.");return}
+  const player={id:x.id,name:x.name,club:x.club,position:x.position,age:x.age,estimated_value_eur:x.estimatedValue,overall:x.overall};
+  try{
+   const {data:{user}}=await s.auth.getUser();
+   if(user){
+    const {data:members}=await s.from("club_members").select("club_id").eq("user_id",user.id);
+    if(members?.length){
+     const ids=members.map(m=>m.club_id);
+     const {data:clubs}=await s.from("clubs").select("id,name").in("id",ids).eq("name",team);
+     const clubId=clubs?.[0]?.id;
+     if(clubId){
+      const {data:existing,error:checkError}=await s.from("transfer_targets").select("id").eq("club_id",clubId).eq("name",x.name).limit(1).maybeSingle();
+      if(checkError)throw checkError;
+      if(existing){setMsg(x.name+" zaten "+team+" Transfer Merkezi'nde.");return}
+      const {error}=await s.from("transfer_targets").insert({club_id:clubId,name:x.name,position:x.position,current_club:x.club,market_value:Number(x.estimatedValue||0),rating:x.overall/10,priority:"medium",status:"shortlist",notes:"Oyuncu Keşfi görünümünden aday listesine eklendi"});
+      if(error)throw error;
+      setMsg(x.name+" "+team+" Transfer Merkezi'ne eklendi.");return;
+     }
+    }
+   }
+   const exists=getGuestTransfers().some(t=>t.target_team===team&&t.name===x.name&&t.current_club===x.club);
+   if(!exists)addGuestTransfer(player,team);
+   setMsg(exists?x.name+" zaten "+team+" Transfer Merkezi'nde.":x.name+" "+team+" Transfer Merkezi'ne eklendi.");
+  }catch(e){setMsg(e instanceof Error?e.message:"Oyuncu Transfer Merkezi'ne eklenemedi.")}
+ }
+
  return <AppShell title="Oyuncu Keşfi"><div>
   <div className="scoutFilters"><input placeholder="Oyuncu, takım veya ülke ara" value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")load(0,q.trim())}} style={input}/><button onClick={()=>load(0,q.trim())} disabled={loading} style={button}>Ara</button><button onClick={syncEA} disabled={loading} style={navButton}>{loading?"İşleniyor…":"YanımdaFutbol Verilerini Senkronize Et"}</button></div>
   <details className="scoutAdvanced" open><summary>Filtrele ve Sırala</summary><div className="scoutAdvancedGrid scoutFilterLayout" style={{display:"grid",gridTemplateColumns:"repeat(6,minmax(0,1fr))",gap:12}}>
