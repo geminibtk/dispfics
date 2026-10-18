@@ -101,7 +101,7 @@ export default function Lineup(){
   setMsg("İlk 11 ve diziliş kaydedildi.");
  }
 
- return <AppShell title={teamName?teamName+" • Aktif Kadro":"Aktif Kadro"} hideTitle><div style={{maxWidth:1050}}>{teamName&&<button type="button" className="playerBack" onClick={()=>router.push("/teams")}>← Takımlar</button>}
+ return <AppShell title={teamName?teamName+" • Aktif Kadro":"Aktif Kadro"} hideTitle><div style={{maxWidth:1050}}>{teamName&&<div style={{marginBottom:14}}><button type="button" className="playerBack" onClick={()=>router.push("/teams")}>← Takımlar</button></div>}
   
   
   <small style={{color:"#49ad60"}}>İLK 11 • {formation.name}</small>
