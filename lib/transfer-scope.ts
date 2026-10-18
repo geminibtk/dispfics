@@ -12,3 +12,8 @@ export function uniqueScoutingMatch<T extends {name:string;club:string|null}>(ta
  }
  return candidates.length===1?candidates[0]:undefined;
 }
+
+export function selectSingleMembershipClub(members:{club_id:string}[]):string{
+ const ids=Array.from(new Set(members.map(m=>String(m.club_id)).filter(Boolean)));
+ return ids.length===1?ids[0]:"";
+}
