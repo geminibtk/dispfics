@@ -34,7 +34,7 @@ for(const [index,formation] of ai.entries()){
   test("Valid first eleven and reserves for formation "+index+" "+formation.name,()=>{
     const distinct=[...new Set(formation.roles)];
     const players=distinct.flatMap((role,ri)=>Array.from({length:formation.roles.filter(x=>x===role).length+2},(_,j)=>({
-      id:role+"-"+j, name:role+" "+j, rating:90-ri-j, positions:[role]
+      id:role+"-"+j, name:role+" "+j, rating:80, positions:[role]
     })));
     const result=computeAutomaticLineup(players,formation.roles,index,getPositions);
     const selected=Object.entries(result.selected);
