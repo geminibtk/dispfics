@@ -58,3 +58,5 @@ test("Empty squad should not produce selected players or reserves",()=>{
   assert.deepEqual(result.selected,{});
   assert.deepEqual(result.reserves,[]);
 });
+
+test("Uneven player ratings preserve roster ownership",()=>{const formation=ai[7];const squad=[...new Set(formation.roles)].flatMap((role,i)=>Array.from({length:4},(_,j)=>({id:role+"-"+j,rating:90-i-j,positions:[role]})));const result=computeAutomaticLineup(squad,formation.roles,7,getPositions);const ids=Object.values(result.selected);const bench=result.reserves.map(p=>p.id);assert.equal(new Set(ids).size,ids.length);assert.equal(new Set(bench).size,bench.length);assert.ok(bench.every(id=>!ids.includes(id)));assert.equal(ids.length+bench.length,squad.length)});
