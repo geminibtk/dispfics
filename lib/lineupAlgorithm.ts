@@ -18,11 +18,11 @@ export function orderLineupReserves(
   const slots=roles.map(role=>({slot:role+"_"+(counts[role]=(counts[role]||0)+1),role}));
   type Chain={slot:string;role:string;members:string[]};
   const chains:Chain[]=slots.map(s=>({...s,members:selected[s.slot]?[String(selected[s.slot])]:[""]}));
-  const firstPos=(id:string)=>getPositions(byId.get(id)||{})[0]||"";
+  const firstPos=(id:string)=>{const player=byId.get(id);return player?(getPositions(player)[0]||""):""};
   const cmpLow=(a:string,b:string)=>{
     const x=byId.get(a),y=byId.get(b);
     return Number(x?.rating||0)-Number(y?.rating||0)
-      ||getPositions(x||{}).length-getPositions(y||{}).length
+      ||(x?getPositions(x).length:0)-(y?getPositions(y).length:0)
       ||firstPos(b).localeCompare(firstPos(a),"tr");
   };
   const compatible=(id:string,chain:Chain)=>getPositions(byId.get(id)||{}).includes(chain.role);
