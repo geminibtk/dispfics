@@ -6,8 +6,7 @@ const properties:{key:keyof ClubProfile;pid:string;label:string}[]=[
  {key:"founded",pid:"P571",label:"Kuruluş"},
  {key:"stadium",pid:"P115",label:"Stadyum"},
  {key:"city",pid:"P131",label:"Şehir / Konum"},
- {key:"country",pid:"P17",label:"Ülke"},
- {key:"website",pid:"P856",label:"Resmî site"}
+ {key:"country",pid:"P17",label:"Ülke"}
 ];
 const api="https://www.wikidata.org/w/api.php";
 async function getData(params:Record<string,string>){const url=new URL(api);Object.entries({format:"json",origin:"*",...params}).forEach(([k,v])=>url.searchParams.set(k,v));const response=await fetch(url.toString());if(!response.ok)throw new Error("Wikidata");return response.json()}
@@ -31,7 +30,6 @@ export default function ClubProfile({name,league}:{name:string;league:string}){
    const claim=claims[prop.pid]?.find((x:any)=>x.mainsnak?.datavalue)?.mainsnak?.datavalue?.value;
    if(!claim)continue;
    if(prop.key==="founded"){const year=String(claim.time||"").match(/[+-](\d{4})/);if(year)output.founded=year[1]}
-   else if(prop.key==="website"){if(typeof claim==="string"&&claim.startsWith("https://"))output.website=claim}
    else if(claim.id){(output as any)[prop.key]=claim.id;ids.push(claim.id)}
   }
   if(ids.length){
@@ -44,13 +42,12 @@ export default function ClubProfile({name,league}:{name:string;league:string}){
  })().catch(()=>{if(active)setLoading(false)});
  return()=>{active=false}
  },[name]);
- const fields=properties.filter(p=>p.key!=="website"&&profile?.[p.key]);
+ const fields=properties.filter(p=>profile?.[p.key]);
  return <div className="module"><h2>Kulüp Profili</h2><p>Kulübün temel bilgileri</p>
  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:12,marginTop:20}}>
  {fields.map(p=><div key={p.pid} style={{border:"1px solid #294032",borderRadius:12,padding:18}}><small style={{color:"#8fa399"}}>{p.label}</small><h3>{profile?.[p.key]}</h3></div>)}
  </div>
  {loading?<p style={{marginTop:20}}>Kulüp bilgileri getiriliyor…</p>:<div style={{marginTop:20,display:"flex",gap:16,flexWrap:"wrap"}}>
- {profile?.website&&<a href={profile.website} target="_blank" rel="noopener noreferrer">Resmî web sitesi ↗</a>}
  {!fields.length&&<p>Bu kulüp için doğrulanabilir ek profil bilgisi bulunamadı.</p>}
  </div>}
  </div>
