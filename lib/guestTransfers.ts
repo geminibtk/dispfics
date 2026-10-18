@@ -1,0 +1,5 @@
+export const GUEST_TRANSFERS_KEY="dispfics-guest-transfer-targets";
+export type GuestTransfer={id:string;name:string;position:string;age:number|null;current_club:string|null;market_value:number;rating:number;priority:string;status:string;created_at:string};
+export function getGuestTransfers():GuestTransfer[]{try{const value=JSON.parse(localStorage.getItem(GUEST_TRANSFERS_KEY)||"[]");return Array.isArray(value)?value:[]}catch{return []}}
+export function saveGuestTransfers(rows:GuestTransfer[]){localStorage.setItem(GUEST_TRANSFERS_KEY,JSON.stringify(rows))}
+export function addGuestTransfer(p:any){const rows=getGuestTransfers();if(rows.some(x=>x.name===p.name&&x.current_club===(p.club||null)))return;rows.unshift({id:"guest-"+String(p.id),name:p.name,position:p.position||"",age:p.age==null?null:Number(p.age),current_club:p.club||null,market_value:Number(p.estimated_value_eur||0),rating:Number(p.overall||0)/10,priority:"medium",status:"shortlist",created_at:new Date().toISOString()});saveGuestTransfers(rows)}
