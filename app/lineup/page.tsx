@@ -53,6 +53,20 @@ export default function Lineup(){
  type TransferPlan={type:"required"|"upgrade";roles:string[];targets:TransferTarget[];rating:{min:number,max:number}|null;age:{min:number,max:number}|null;value:{min:number,max:number}|null};
  const formation=useMemo(()=>keys.find(x=>x.key===formationKey)||keys.find(x=>x.name==="3-4-2-1")||keys[0],[formationKey]);
  const slots=useMemo(()=>{const count:Record<string,number>={},totals:Record<string,number>={};formation.roles.forEach(r=>totals[r]=(totals[r]||0)+1);const y:Record<string,number>={KL:91,STP:77,SGB:72,SLB:72,SGK:53,SLK:53,MDO:61,MO:48,SGO:42,SLO:42,MOO:32,SNT:12};const sideX:Record<string,number>={SGB:88,SGK:87,SGO:84,SLB:12,SLK:13,SLO:16};return formation.roles.map(role=>{count[role]=(count[role]||0)+1;const n=count[role],total=totals[role];let x=sideX[role]??50;if(sideX[role]==null&&total>1){const spread=total>=3?27:31;x=50+(n-(total+1)/2)*spread}return {slot:role+"_"+n,role,x,y:y[role]||50}})},[formation]);
+ // Keep the formation unchanged. Only nudge a few center/defender portraits
+ // horizontally on narrow screens when a nearby wide player's portrait covers them.
+ const photoSlots=useMemo(()=>{
+  const flankRoles=new Set(["SGB","SLB","SGK","SLK","SGO","SLO"]);
+  const positioned=slots.map(slot=>({...slot,mobileX:Math.max(16,Math.min(84,slot.x))}));
+  for(const flank of positioned.filter(slot=>flankRoles.has(slot.role))){
+   for(const inner of positioned.filter(slot=>!flankRoles.has(slot.role))){
+    if(Math.abs(flank.y-inner.y)<=8 && Math.abs(flank.mobileX-inner.mobileX)<18){
+     inner.mobileX=flank.mobileX+(flank.mobileX<50?18:-18);
+    }
+   }
+  }
+  return positioned;
+ },[slots]);
  async function loadGuest(){
   setGuestMode(true);
   let query=s.from("scouting_players").select("id,name,position,alternate_positions,overall,age,estimated_value_eur,avatar_url").eq("is_active",true);if(teamName){query=query.eq("club",teamName);if(teamLeague)query=query.eq("league",teamLeague)}const {data,error}=await query.order("overall",{ascending:false}).limit(teamName?1000:200);
@@ -112,7 +126,7 @@ export default function Lineup(){
   </label>
   <div className="lineupMetrics" style={{display:"flex",gap:10,flexWrap:"wrap",margin:"10px 0 14px"}}><span style={metricCard}><small style={metricLabel}>ORT. REYTİNG</small><b>{metrics.rating!=null?displayRating(metrics.rating):"—"}</b></span><span style={metricCard}><small style={metricLabel}>ORT. YAŞ</small><b>{metrics.age!=null?metrics.age.toFixed(0):"—"}</b></span><span style={metricCard}><small style={metricLabel}>ORT. DEĞER</small><b>{formatMarketValue(metrics.value)}</b></span></div>
   {(()=>{const plan=transferPlan();if(!plan)return null;const required=plan.type==="required";const sorted=plan.targets.map((t,i)=>({t,i,p:players.find(x=>String(x.id)===String(t.playerId))})).sort((a,b)=>Number(b.p?.rating||0)-Number(a.p?.rating||0)||(b.p?playerPositions(b.p).length:0)-(a.p?playerPositions(a.p).length:0)||(a.p?playerPositions(a.p)[0]||"":"").localeCompare(b.p?playerPositions(b.p)[0]||"":"", "tr")||Number(b.p?.age||0)-Number(a.p?.age||0)||Number(b.p?.marketValue||0)-Number(a.p?.marketValue||0));return <section className="clubSquadPanel lineupTransferPanel" style={{margin:"10px 0 14px"}}><div className="clubSquadHead"><div><small>TRANSFER ÖNERİSİ</small></div><button className="clubAction" onClick={()=>openTransferOffer()}>{required?"Transfer adayı bul →":"Alternatif oyuncuları göster →"}</button></div><div className="clubSquadLabels"><span>OYUNCU</span><span>YF REYTİNG</span><span>POZİSYON</span><span>YAŞ</span><span>DEĞER</span><span></span></div><div className="clubSquadList">{sorted.map(({t,i,p})=><div key={i} className="clubSquadRow" role={p?"link":undefined} tabIndex={p?0:undefined} onClick={()=>p&&router.push(`/scouting/${p.id}`)} onKeyDown={e=>{if(e.key==="Enter"&&p)router.push(`/scouting/${p.id}`)}}><span className="clubSquadPlayer">{p?.avatar_url?<img src={p.avatar_url} alt=""/>:<i>{initials(t.playerName||LABELS[t.role]||t.role)}</i>}<b>{t.playerName||"Transfer gerekli"}</b></span><strong>{p?displayRating(p.rating):"—"}</strong><span>{p?.position||t.role}</span><span>{p?.age??"—"}</span><span>{p?formatMarketValue(p.marketValue):"—"}</span><button type="button" className="lineupAlternativesAction" onClick={e=>{e.stopPropagation();openTransferOffer(i)}}>Alternatifler →</button></div>)}</div></section>})()}
-  <div className="lineupPitch" style={pitch}>{slots.map(({slot,role,x,y})=>{const p=players.find(v=>String(v.id)===String(selected[slot]));return <button key={slot} className="lineupSpot" onClick={()=>p&&router.push(`/scouting/${p.id}`)} style={{...spot,left:x+"%",top:y+"%",["--lineup-x" as string]:x+"%"}}><span className="lineupPlayerAvatar" style={playerAvatar}>{p?.avatar_url?<img src={p.avatar_url} alt="" style={avatarImg}/>:<i style={avatarFallback}>{p?initials(p.name):"+"}</i>}</span><span className="lineupPlayerCard" style={playerCard}><b className="lineupPlayerName" style={playerName}>{p?p.name:"Boş Pozisyon"}</b><span className="lineupPlayerStats" style={playerStats}><strong title="YF Reyting" style={ratingBadge}>{p?displayRating(p.rating):"—"}</strong><small className="lineupPlayerInfo" title="Pozisyon" style={playerInfo}>{role}</small></span></span></button>})}<div style={half}/><div style={circle}/><div style={boxTop}/><div style={boxBottom}/></div>
+  <div className="lineupPitch" style={pitch}>{photoSlots.map(({slot,role,x,y,mobileX})=>{const p=players.find(v=>String(v.id)===String(selected[slot]));return <button key={slot} className="lineupSpot" onClick={()=>p&&router.push(`/scouting/${p.id}`)} style={{...spot,left:x+"%",top:y+"%",["--lineup-x" as string]:x+"%",["--lineup-photo-x" as string]:mobileX+"%"}}><span className="lineupPlayerAvatar" style={playerAvatar}><PitchPhoto key={String(p?.id||slot)+":"+(p?.avatar_url||"")} url={p?.avatar_url} name={p?.name||""}/></span><span className="lineupPlayerCard" style={playerCard}><b className="lineupPlayerName" style={playerName}>{p?p.name:"Boş Pozisyon"}</b><span className="lineupPlayerStats" style={playerStats}><strong title="YF Reyting" style={ratingBadge}>{p?displayRating(p.rating):"—"}</strong><small className="lineupPlayerInfo" title="Pozisyon" style={playerInfo}>{role}</small></span></span></button>})}<div style={half}/><div style={circle}/><div style={boxTop}/><div style={boxBottom}/></div>
   {autoReserves.length>0&&<div style={{display:"grid",gap:16,marginTop:12}}>
    <section className="clubSquadPanel lineupReservePanel" style={{padding:18}}>
     <div className="clubSquadHead"><div><small>YEDEKLER</small></div><span>{Math.min(7,autoReserves.length)} oyuncu</span></div>
@@ -161,4 +175,10 @@ const offerBtn:any={justifySelf:"start",padding:"9px 13px",background:"#2e9d4b",
 
 const topFormationButton:any={width:"100%",maxWidth:520,display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,padding:"14px 16px",margin:"12px 0",background:"#132019",color:"white",border:"1px solid #49ad60",borderRadius:10,textAlign:"left",cursor:"pointer"};
 
+// A failed/absent image never leaves an invisible or broken portrait.
+function PitchPhoto({url,name}:{url?:string|null;name:string}){
+ const [failed,setFailed]=useState(false);
+ if(!url||failed)return <i style={avatarFallback}>{name?initials(name):"+"}</i>;
+ return <img src={url} alt={name?name+" fotoğrafı":""} loading="eager" decoding="async" onError={()=>setFailed(true)} style={avatarImg}/>;
+}
 function initials(n:string){return n.split(" ").slice(0,2).map(x=>x[0]).join("").toUpperCase()}
