@@ -275,3 +275,76 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
  .statisticsPage .statisticsPlayerPanel .teamSquadRow>span:nth-child(4)::before{display:block;color:#8fa399;font-size:10px;font-weight:600;margin-bottom:4px}
  .statisticsPage .statisticsPlayerPanel .clubSquadPlayer{min-width:0}
 }
+
+/* Active lineup: mobile-first spacing, transfer rows and pitch */
+.lineupPage{width:100%;min-width:0;max-width:1050px}
+.lineupPage .clubSquadPanel{max-width:100%;min-width:0}
+.lineupPage .clubSquadList{min-width:0;max-width:100%}
+@media(max-width:650px){
+ .lineupPage .lineupBack{margin-bottom:12px!important}
+ .lineupPage .lineupBack .playerBack{margin-bottom:0}
+ .lineupPage>p{font-size:14px;line-height:1.45;margin:14px 0}
+ .lineupPage .lineupMetrics{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px!important}
+ .lineupPage .lineupMetrics>span{min-width:0!important;padding:10px 8px!important;align-content:start}
+ .lineupPage .lineupMetrics>span>small{font-size:9px!important;line-height:1.25}
+ .lineupPage .lineupMetrics>span>b{font-size:19px;line-height:1.25}
+ .lineupPage .lineupTransferPanel{padding:0!important;overflow:hidden}
+ .lineupPage .lineupTransferPanel .clubSquadHead{padding:12px;flex-direction:column;align-items:stretch;gap:10px}
+ .lineupPage .lineupTransferPanel .clubSquadHead .clubAction{display:block;width:100%;max-width:100%;padding:11px 12px}
+ .lineupPage .lineupReservePanel{padding:10px!important;overflow:hidden}
+ .lineupPage .lineupReservePanel .clubSquadHead{padding:8px 4px}
+ .lineupPage .lineupReserveGroup{padding:6px!important}
+ .lineupPage .clubSquadLabels{display:none!important}
+ .lineupPage .clubSquadRow{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  width:100%;min-width:0;gap:9px;padding:12px 10px;
+  overflow:visible!important;align-items:start;font-size:12px
+ }
+ .lineupPage .clubSquadRow>*{order:0!important;min-width:0;position:static!important}
+ .lineupPage .clubSquadRow>.clubSquadPlayer{
+  grid-column:1/-1;grid-row:1;display:flex;gap:10px;
+  min-width:0!important;padding:0;align-items:center
+ }
+ .lineupPage .clubSquadPlayer img,.lineupPage .clubSquadPlayer i{
+  width:42px;height:42px;flex:0 0 42px
+ }
+ .lineupPage .clubSquadRow .clubSquadPlayer b{
+  white-space:normal;overflow-wrap:anywhere;
+  text-overflow:clip;line-height:1.35;font-size:14px
+ }
+ .lineupPage .clubSquadRow>span:nth-child(2){grid-column:1;grid-row:2}
+ .lineupPage .clubSquadRow>span:nth-child(3){grid-column:2;grid-row:2}
+ .lineupPage .clubSquadRow>strong:nth-child(4){grid-column:3;grid-row:2;color:#49ad60;font-size:17px}
+ .lineupPage .clubSquadRow>span:nth-child(5){grid-column:4;grid-row:2}
+ .lineupPage .clubSquadRow>span:nth-child(2)::before{content:"POZİSYON"}
+ .lineupPage .clubSquadRow>span:nth-child(3)::before{content:"YAŞ"}
+ .lineupPage .clubSquadRow>strong:nth-child(4)::before{content:"YF REYTİNG"}
+ .lineupPage .clubSquadRow>span:nth-child(5)::before{content:"DEĞER"}
+ .lineupPage .clubSquadRow>span:nth-child(2)::before,
+ .lineupPage .clubSquadRow>span:nth-child(3)::before,
+ .lineupPage .clubSquadRow>strong:nth-child(4)::before,
+ .lineupPage .clubSquadRow>span:nth-child(5)::before{
+  display:block;font-size:8px;color:#879b8d;font-weight:700;margin-bottom:5px;line-height:1.25
+ }
+ .lineupPage .clubSquadRow>:nth-child(6){
+  grid-column:1/-1;grid-row:3;position:static!important;
+  background:transparent!important;padding:5px 0 0!important;
+  justify-self:start;text-align:left;white-space:normal
+ }
+ .lineupPage .lineupAlternativesAction{font-size:13px}
+ .lineupPage .lineupPitch{height:590px!important;min-height:590px!important;margin:14px 0!important;border-radius:14px!important}
+ .lineupPage .lineupPitch .lineupSpot{
+  left:clamp(16%,var(--lineup-x),84%)!important;
+  width:29%!important;max-width:112px!important;min-width:0!important
+ }
+ .lineupPage .lineupPlayerAvatar{
+  width:38px!important;height:38px!important;
+  border-width:2px!important;margin-bottom:-6px!important
+ }
+ .lineupPage .lineupPlayerCard{padding:8px 3px 5px!important;gap:2px!important;border-radius:8px!important}
+ .lineupPage .lineupPlayerName{font-size:10px!important;line-height:1.2!important}
+ .lineupPage .lineupPlayerInfo{font-size:8px!important}
+ .lineupPage .lineupPlayerStats{gap:3px!important}
+ .lineupPage .lineupPlayerStats strong{min-width:23px!important;height:19px!important;font-size:10px!important;padding:0 3px!important}
+ .lineupPage .lineupPlayerStats em{font-size:8px!important}
+}
