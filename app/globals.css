@@ -196,3 +196,19 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
  .aiOfferGroup .aiTransferCandidates .aiCandidateRow>span:last-child{grid-column:1 / -1;grid-row:3}
  .aiOfferGroup .aiTransferCandidates .aiCandidateRow button{font-size:12px!important}
 }
+
+/* AI candidate table: five explicit columns, never inherit global roster ordering */
+.aiOfferGroup .aiTransferCandidates .aiCandidateLabels,
+.aiOfferGroup .aiTransferCandidates .aiCandidateRow{
+ grid-template-columns:minmax(145px,2fr) minmax(78px,.7fr) minmax(50px,.5fr) minmax(110px,1fr) minmax(155px,1.45fr);
+}
+.aiOfferGroup .aiTransferCandidates .aiCandidateLabels>*,
+.aiOfferGroup .aiTransferCandidates .aiCandidateRow>*{order:0!important;min-width:0}
+@media(max-width:760px){
+ .aiOfferGroup .aiTransferCandidates .aiCandidateRow{grid-template-columns:minmax(0,1fr) repeat(3,minmax(0,.6fr))}
+ .aiOfferGroup .aiTransferCandidates .aiCandidateRow>span:first-child{grid-column:1 / -1;grid-row:1}
+ .aiOfferGroup .aiTransferCandidates .aiCandidateRow>strong:nth-child(2){grid-column:1;grid-row:2}
+ .aiOfferGroup .aiTransferCandidates .aiCandidateRow>span:nth-child(3){grid-column:2;grid-row:2}
+ .aiOfferGroup .aiTransferCandidates .aiCandidateRow>span:nth-child(4){grid-column:3 / 5;grid-row:2}
+ .aiOfferGroup .aiTransferCandidates .aiCandidateRow>span:last-child{grid-column:1 / -1;grid-row:3}
+}
