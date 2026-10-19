@@ -212,3 +212,8 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
  .aiOfferGroup .aiTransferCandidates .aiCandidateRow>span:nth-child(4){grid-column:3 / 5;grid-row:2}
  .aiOfferGroup .aiTransferCandidates .aiCandidateRow>span:last-child{grid-column:1 / -1;grid-row:3}
 }
+
+/* Statistics expanded player list: five aligned columns without position */
+.statisticsPlayerPanel .teamSquadColumns,.statisticsPlayerPanel .teamSquadRow{grid-template-columns:minmax(170px,2fr) minmax(85px,.8fr) minmax(55px,.5fr) minmax(85px,.8fr) minmax(75px,.7fr);gap:10px;min-width:0}
+.statisticsPlayerPanel .teamSquadColumns>*,.statisticsPlayerPanel .teamSquadRow>*{order:0!important;min-width:0}
+@media(max-width:650px){.statisticsPlayerPanel .teamSquadColumns,.statisticsPlayerPanel .teamSquadRow{grid-template-columns:minmax(120px,2fr) 65px 45px 70px 65px;gap:5px;font-size:11px}.statisticsPlayerPanel .teamSquadRow{padding:10px 6px}.statisticsPlayerPanel .teamSquadColumns{padding:10px 6px}.statisticsPlayerPanel .clubSquadPlayer{min-width:0;gap:5px}.statisticsPlayerPanel .clubSquadPlayer img,.statisticsPlayerPanel .clubSquadPlayer i{width:28px;height:28px;flex:0 0 28px}}
