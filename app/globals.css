@@ -354,3 +354,10 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
 
 /* Do not reserve an empty page-title area above the active lineup on phones */
 @media(max-width:650px){.shellContent>header.lineupShellHeader{min-height:68px;padding-top:10px;padding-bottom:6px}}
+
+/* Pitch cards: match rating -> position -> age -> value order on all screens */
+.lineupPage .lineupPlayerStats{width:100%;min-width:0;grid-template-columns:repeat(4,max-content);justify-content:space-between;align-items:center;gap:2px!important}
+.lineupPage .lineupPlayerStats>small,.lineupPage .lineupPlayerStats>em{white-space:nowrap}
+@media(max-width:380px){
+ .lineupPage .lineupPlayerStats{grid-template-columns:repeat(2,minmax(0,1fr));justify-items:center;gap:3px!important}
+}
