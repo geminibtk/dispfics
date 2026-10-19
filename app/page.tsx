@@ -22,6 +22,8 @@ useEffect(()=>{(async()=>{const s=createClient();void (async()=>{
  }
  const average=(sum:number,count:number)=>count?sum/count:-Infinity;
  setLeagues(Array.from(totals.keys()).sort((a,b)=>{
+  if(a==="Trendyol Süper Lig")return -1;
+  if(b==="Trendyol Süper Lig")return 1;
   const x=totals.get(a)!,y=totals.get(b)!;
   return average(y.ratingSum,y.ratingCount)-average(x.ratingSum,x.ratingCount)
    ||average(y.ageSum,y.ageCount)-average(x.ageSum,x.ageCount)
