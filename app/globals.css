@@ -358,3 +358,33 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
 /* Pitch cards: compact rating + position only */
 .lineupPage .lineupPlayerStats{width:100%;min-width:0;grid-template-columns:repeat(2,max-content);justify-content:center;align-items:center;gap:7px!important}
 .lineupPage .lineupPlayerStats>small{white-space:nowrap}
+
+/* Tactical formation readability: keep absolute pitch positions, not a grid/list. */
+.lineupPage .lineupPitch{box-sizing:border-box}
+.lineupPage .lineupPitch .lineupPlayerName{
+ white-space:normal!important;overflow:visible!important;text-overflow:clip!important;
+ overflow-wrap:anywhere;line-height:1.25!important;min-height:2.5em
+}
+.lineupPage .lineupPitch .lineupPlayerCard{min-width:0;box-sizing:border-box}
+.lineupPage .lineupPitch .lineupPlayerAvatar img{
+ display:block;width:100%;height:100%;
+ object-fit:contain!important;object-position:center bottom!important
+}
+@media(max-width:650px){
+ .lineupPage .lineupPitch{
+  height:var(--pitch-mobile-height)!important;
+  min-height:var(--pitch-mobile-height)!important;
+  overflow:hidden!important;
+ }
+ .lineupPage .lineupPitch .lineupSpot{
+  left:var(--lineup-mobile-x)!important;
+  top:var(--lineup-mobile-top)!important;
+  width:30%!important;max-width:112px!important;
+ }
+ .lineupPage .lineupPitch .lineupPlayerName{
+  font-size:10.5px!important;line-height:1.24!important;
+  min-height:2.5em
+ }
+ .lineupPage .lineupPitch .lineupPlayerCard{padding:8px 5px 7px!important}
+ .lineupPage .lineupPitch .lineupPlayerAvatar{width:40px!important;height:40px!important}
+}
