@@ -217,3 +217,21 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
 .statisticsPlayerPanel .teamSquadColumns,.statisticsPlayerPanel .teamSquadRow{grid-template-columns:minmax(170px,2fr) minmax(85px,.8fr) minmax(55px,.5fr) minmax(85px,.8fr) minmax(75px,.7fr);gap:10px;min-width:0}
 .statisticsPlayerPanel .teamSquadColumns>*,.statisticsPlayerPanel .teamSquadRow>*{order:0!important;min-width:0}
 @media(max-width:650px){.statisticsPlayerPanel .teamSquadColumns,.statisticsPlayerPanel .teamSquadRow{grid-template-columns:minmax(120px,2fr) 65px 45px 70px 65px;gap:5px;font-size:11px}.statisticsPlayerPanel .teamSquadRow{padding:10px 6px}.statisticsPlayerPanel .teamSquadColumns{padding:10px 6px}.statisticsPlayerPanel .clubSquadPlayer{min-width:0;gap:5px}.statisticsPlayerPanel .clubSquadPlayer img,.statisticsPlayerPanel .clubSquadPlayer i{width:28px;height:28px;flex:0 0 28px}}
+
+/* Shared page geometry: one consistent content edge across routes */
+.appShell,.shellContent,.shellPage{min-width:0}
+.shellPage{box-sizing:border-box}
+.shellPage > *{min-width:0;max-width:100%}
+.shellPage > div{width:100%;min-width:0}
+.shellPage > div > section:not(.module):not(.aiOfferGroup){padding:0;max-width:100%;width:100%}
+.shellPage :where(.clubSquadPanel,.scoutSquadPanel,.teamSquadPanel,.transferPage,.aiOfferGroup,.module,.hero,.panel){max-width:100%;min-width:0}
+.shellPage :where(.clubSquadList,.clubSquadLabels){max-width:100%}
+.shellPage :where(img,svg){max-width:100%}
+.shellPage :where(input,select,textarea){max-width:100%}
+.shellContent > header{gap:16px;min-width:0}
+.shellContent > header > *{min-width:0}
+@media(max-width:820px){
+ .shellContent > header{padding-left:16px;padding-right:70px}
+ .shellPage{padding-left:16px;padding-right:16px}
+ .shellPage > div > section:not(.module):not(.aiOfferGroup){padding:0}
+}
