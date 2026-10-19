@@ -53,10 +53,10 @@ export default function Lineup(){
  type TransferPlan={type:"required"|"upgrade";roles:string[];targets:TransferTarget[];rating:{min:number,max:number}|null;age:{min:number,max:number}|null;value:{min:number,max:number}|null};
  const formation=useMemo(()=>keys.find(x=>x.key===formationKey)||keys.find(x=>x.name==="3-4-2-1")||keys[0],[formationKey]);
  const slots=useMemo(()=>{const count:Record<string,number>={},totals:Record<string,number>={};formation.roles.forEach(r=>totals[r]=(totals[r]||0)+1);const y:Record<string,number>={KL:91,STP:77,SGB:72,SLB:72,SGK:53,SLK:53,MDO:61,MO:48,SGO:42,SLO:42,MOO:32,SNT:12};const sideX:Record<string,number>={SGB:88,SGK:87,SGO:84,SLB:12,SLK:13,SLO:16};return formation.roles.map(role=>{count[role]=(count[role]||0)+1;const n=count[role],total=totals[role];let x=sideX[role]??50;if(sideX[role]==null&&total>1){const spread=total>=3?27:31;x=50+(n-(total+1)/2)*spread}return {slot:role+"_"+n,role,x,y:y[role]||50}})},[formation]);
- // Position lines are ordered from goalkeeper to attackers. Every mobile row
+ // Position lines are ordered from attackers at the top to goalkeeper at the bottom. Every mobile row
  // contains at most two cards so names, rating and position never overlap.
  const visiblePitchSlots=useMemo(()=>{
-  const depths=Array.from(new Set(slots.map(slot=>slot.y))).sort((a,b)=>b-a);
+  const depths=Array.from(new Set(slots.map(slot=>slot.y))).sort((a,b)=>a-b);
   let mobileRow=1;
   return depths.flatMap(depth=>{
    const line=slots.filter(slot=>slot.y===depth).sort((a,b)=>a.x-b.x);
