@@ -235,3 +235,43 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
  .shellPage{padding-left:16px;padding-right:16px}
  .shellPage > div > section:not(.module):not(.aiOfferGroup){padding:0}
 }
+
+/* Club statistics / position analysis: unified responsive layout */
+.statisticsPage{min-width:0;width:100%;padding-top:24px}
+.statisticsPage>h2{margin:0 0 10px;line-height:1.15}
+.statisticsPage>p{margin:0;line-height:1.5}
+.statisticsPositionSection{margin-top:24px;padding:0;max-width:100%;min-width:0;width:100%}
+.statisticsPositionSection>h3{margin:0 0 14px}
+.statisticsPositionSection>div{min-width:0}
+.statisticsPositionGroup{min-width:0;max-width:100%;border:1px solid #294032;border-radius:12px;overflow:hidden}
+.statisticsPositionButton{width:100%;min-width:0;background:#101c15;color:#fff;border:0;padding:16px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.statisticsPositionLabels,.statisticsPositionCells{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,.8fr) minmax(0,.8fr) 24px;align-items:center;gap:12px;width:100%;min-width:0}
+.statisticsPositionLabels{padding:0 16px;font-size:11px;font-weight:800;color:#8fa399}
+.statisticsPositionLabels>*,.statisticsPositionCells>*{min-width:0;overflow-wrap:anywhere}
+@media(max-width:650px){
+ .statisticsPage{padding-top:18px}
+ .statisticsPage>h2{font-size:clamp(27px,7vw,36px);line-height:1.15}
+ .statisticsPage>p{font-size:14px}
+ .statisticsPositionSection{margin-top:22px}
+ .statisticsPositionSection>h3{font-size:18px}
+ .statisticsPositionLabels,.statisticsPositionCells{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr) minmax(0,.7fr) minmax(0,.8fr) 13px;gap:5px}
+ .statisticsPositionLabels{padding:0 8px;font-size:9px;line-height:1.3}
+ .statisticsPositionButton{padding:12px 8px;gap:8px}
+ .statisticsPositionCells{font-size:13px}
+ .statisticsPositionCells>strong,.statisticsPositionCells>b{font-size:14px;white-space:nowrap}
+ .statisticsPage .statisticsPlayerPanel{margin:8px!important;overflow-x:hidden}
+ .statisticsPage .statisticsPlayerPanel .teamSquadColumns{display:none}
+ .statisticsPage .statisticsPlayerPanel .teamSquadRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;min-width:0;padding:12px 9px}
+ .statisticsPage .statisticsPlayerPanel .teamSquadRow>span:first-child{grid-column:1/-1;grid-row:1}
+ .statisticsPage .statisticsPlayerPanel .teamSquadRow>strong:nth-child(2){grid-column:1;grid-row:2}
+ .statisticsPage .statisticsPlayerPanel .teamSquadRow>span:nth-child(3){grid-column:2;grid-row:2}
+ .statisticsPage .statisticsPlayerPanel .teamSquadRow>span:nth-child(4){grid-column:3;grid-row:2}
+ .statisticsPage .statisticsPlayerPanel .teamSquadRow>span:nth-child(5){grid-column:1/-1;grid-row:3;text-align:right}
+ .statisticsPage .statisticsPlayerPanel .teamSquadRow>strong:nth-child(2)::before{content:"YF REYTİNG"}
+ .statisticsPage .statisticsPlayerPanel .teamSquadRow>span:nth-child(3)::before{content:"YAŞ"}
+ .statisticsPage .statisticsPlayerPanel .teamSquadRow>span:nth-child(4)::before{content:"DEĞER"}
+ .statisticsPage .statisticsPlayerPanel .teamSquadRow>strong:nth-child(2)::before,
+ .statisticsPage .statisticsPlayerPanel .teamSquadRow>span:nth-child(3)::before,
+ .statisticsPage .statisticsPlayerPanel .teamSquadRow>span:nth-child(4)::before{display:block;color:#8fa399;font-size:10px;font-weight:600;margin-bottom:4px}
+ .statisticsPage .statisticsPlayerPanel .clubSquadPlayer{min-width:0}
+}
