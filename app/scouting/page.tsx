@@ -26,8 +26,10 @@ type ScoutFilters={q:string;pos:string;min:string;league:string;country:string;s
 function savedScoutFilters():Partial<ScoutFilters>{
  try{const raw=sessionStorage.getItem(SCOUT_FILTER_KEY);sessionStorage.removeItem(SCOUT_FILTER_KEY);return raw?JSON.parse(raw):{}}catch{return {}}
 }
+function sameClub(a:string,b:string){return !!a&&!!b&&a.trim().toLocaleLowerCase("tr-TR")===b.trim().toLocaleLowerCase("tr-TR")}
 export default function Scouting(){
  const s=createClient(),router=useRouter();
+ const [selectedClub]=useState(()=>{try{return String(JSON.parse(sessionStorage.getItem("yf-selected-team")||"{}").team||"")}catch{return ""}});
  const [saved]=useState(savedScoutFilters);
  const [rows,setRows]=useState<Row[]>([]),[q,setQ]=useState(saved.q||""),[pos,setPos]=useState(saved.pos||""),[min,setMin]=useState(saved.min||""),[msg,setMsg]=useState(""),[offset,setOffset]=useState(saved.offset||0),[loading,setLoading]=useState(true),[allCountries,setAllCountries]=useState<string[]>([]),[allLeagues,setAllLeagues]=useState<string[]>([]),[allPositions,setAllPositions]=useState<string[]>([]),[resultTotal,setResultTotal]=useState(TOTAL) , [league,setLeague]=useState(saved.league||""),[country,setCountry]=useState(saved.country||""),[sort,setSort]=useState(saved.sort||"overall"),[maxOverall,setMaxOverall]=useState(saved.maxOverall||""),[minAge,setMinAge]=useState(saved.minAge||""),[maxAge,setMaxAge]=useState(saved.maxAge||""),[minValue,setMinValue]=useState(saved.minValue||""),[maxValue,setMaxValue]=useState(saved.maxValue||""),[sortDirection,setSortDirection]=useState(saved.sortDirection||"desc");
  async function load(next=0, search=q.trim()){
@@ -80,6 +82,7 @@ export default function Scouting(){
   let team="";
   try{team=String(JSON.parse(sessionStorage.getItem("yf-selected-team")||"{}").team||"").trim()}catch{}
   if(!team){setMsg("Önce Takımlar sayfasından bir takım seçmelisin.");return}
+  if(sameClub(x.club,team)){setMsg("Kendi takımının oyuncusu Transfer Merkezi’ne eklenemez.");return}
   const player={id:x.id,name:x.name,club:x.club,position:x.position,age:x.age,estimated_value_eur:x.estimatedValue,overall:x.overall};
   try{
    const {data:{user}}=await s.auth.getUser();
