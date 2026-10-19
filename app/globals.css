@@ -280,6 +280,9 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
 .lineupPage{width:100%;min-width:0;max-width:1050px}
 .lineupPage .clubSquadPanel{max-width:100%;min-width:0}
 .lineupPage .clubSquadList{min-width:0;max-width:100%}
+/* Matching six-column header and rows on desktop, in DOM order */
+.lineupPage .clubSquadLabels,.lineupPage .clubSquadRow{grid-template-columns:minmax(150px,2fr) minmax(75px,.7fr) minmax(65px,.6fr) minmax(50px,.5fr) minmax(80px,.8fr) minmax(80px,.9fr);gap:10px}
+.lineupPage .clubSquadLabels>*,.lineupPage .clubSquadRow>*{order:0!important;min-width:0}
 @media(max-width:650px){
  .lineupPage .lineupBack{margin-bottom:12px!important}
  .lineupPage .lineupBack .playerBack{margin-bottom:0}
@@ -312,17 +315,17 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
   white-space:normal;overflow-wrap:anywhere;
   text-overflow:clip;line-height:1.35;font-size:14px
  }
- .lineupPage .clubSquadRow>span:nth-child(2){grid-column:1;grid-row:2}
+ .lineupPage .clubSquadRow>strong:nth-child(2){grid-column:1;grid-row:2;color:#49ad60;font-size:17px}
  .lineupPage .clubSquadRow>span:nth-child(3){grid-column:2;grid-row:2}
- .lineupPage .clubSquadRow>strong:nth-child(4){grid-column:3;grid-row:2;color:#49ad60;font-size:17px}
+ .lineupPage .clubSquadRow>span:nth-child(4){grid-column:3;grid-row:2}
  .lineupPage .clubSquadRow>span:nth-child(5){grid-column:4;grid-row:2}
- .lineupPage .clubSquadRow>span:nth-child(2)::before{content:"POZİSYON"}
- .lineupPage .clubSquadRow>span:nth-child(3)::before{content:"YAŞ"}
- .lineupPage .clubSquadRow>strong:nth-child(4)::before{content:"YF REYTİNG"}
+ .lineupPage .clubSquadRow>strong:nth-child(2)::before{content:"YF REYTİNG"}
+ .lineupPage .clubSquadRow>span:nth-child(3)::before{content:"POZİSYON"}
+ .lineupPage .clubSquadRow>span:nth-child(4)::before{content:"YAŞ"}
  .lineupPage .clubSquadRow>span:nth-child(5)::before{content:"DEĞER"}
- .lineupPage .clubSquadRow>span:nth-child(2)::before,
+ .lineupPage .clubSquadRow>strong:nth-child(2)::before,
  .lineupPage .clubSquadRow>span:nth-child(3)::before,
- .lineupPage .clubSquadRow>strong:nth-child(4)::before,
+ .lineupPage .clubSquadRow>span:nth-child(4)::before,
  .lineupPage .clubSquadRow>span:nth-child(5)::before{
   display:block;font-size:8px;color:#879b8d;font-weight:700;margin-bottom:5px;line-height:1.25
  }
