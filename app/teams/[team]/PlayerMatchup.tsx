@@ -52,13 +52,14 @@ function bestLineup(players:P[]){
   }).filter((x):x is {role:string;player:P&{rating:number|null};placement:number}=>x!==null);
   const starters=entries.map(({role,player})=>({role,player}));
   const placement=entries.reduce((sum,x)=>sum+x.placement,0);
+  const primaryCount=entries.filter(x=>x.placement===1).length;
   const top11Placement=entries.filter(x=>referenceIds.has(String(x.player.id))).reduce((sum,x)=>sum+x.placement,0);
   const placementByPlayer=sorted.map(p=>entries.find(x=>String(x.player.id)===String(p.id))?.placement??null);
-  return {name,starters,score:entries.filter(x=>referenceIds.has(String(x.player.id))).length,placement,top11Placement,placementByPlayer,index};
+  return {name,starters,score:entries.filter(x=>referenceIds.has(String(x.player.id))).length,primaryCount,placement,top11Placement,placementByPlayer,index};
  });
  // Keep formation selection identical to the AI formation on the Active Squad page.
  options.sort((a,b)=>{
-  const first=b.score-a.score||a.placement-b.placement||a.top11Placement-b.top11Placement;
+  const first=b.score-a.score||b.primaryCount-a.primaryCount||a.placement-b.placement||a.top11Placement-b.top11Placement;
   if(first)return first;
   for(let i=0;i<a.placementByPlayer.length;i++){
    const av=a.placementByPlayer[i],bv=b.placementByPlayer[i];
