@@ -337,11 +337,11 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
  .lineupPage .lineupAlternativesAction{font-size:13px}
  .lineupPage .lineupPitch{height:590px!important;min-height:590px!important;margin:14px 0!important;border-radius:14px!important}
  .lineupPage .lineupPitch .lineupSpot{
-  left:clamp(16%,var(--lineup-x),84%)!important;
-  width:29%!important;max-width:112px!important;min-width:0!important
+  left:var(--lineup-photo-x)!important;
+  width:23%!important;max-width:112px!important;min-width:0!important
  }
  .lineupPage .lineupPlayerAvatar{
-  width:38px!important;height:38px!important;
+  width:36px!important;height:36px!important;
   border-width:2px!important;margin-bottom:-6px!important
  }
  .lineupPage .lineupPlayerCard{padding:8px 3px 5px!important;gap:2px!important;border-radius:8px!important}
@@ -358,3 +358,17 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
 /* Pitch cards: compact rating + position only */
 .lineupPage .lineupPlayerStats{width:100%;min-width:0;grid-template-columns:repeat(2,max-content);justify-content:center;align-items:center;gap:7px!important}
 .lineupPage .lineupPlayerStats>small{white-space:nowrap}
+
+/* Preserve entire sourced player portraits; avoid face/head cropping. */
+.lineupPage .lineupPitch .lineupPlayerAvatar{
+ position:relative;z-index:2;
+ box-sizing:border-box;
+ background:#eef7f0;
+}
+.lineupPage .lineupPitch .lineupPlayerAvatar img{
+ display:block;width:100%;height:100%;
+ object-fit:contain!important;object-position:center center!important;
+}
+.lineupPage .lineupPitch .lineupPlayerAvatar i{
+ display:grid;place-items:center;width:100%;height:100%;
+}
