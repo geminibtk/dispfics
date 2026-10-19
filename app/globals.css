@@ -358,3 +358,103 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
 /* Pitch cards: compact rating + position only */
 .lineupPage .lineupPlayerStats{width:100%;min-width:0;grid-template-columns:repeat(2,max-content);justify-content:center;align-items:center;gap:7px!important}
 .lineupPage .lineupPlayerStats>small{white-space:nowrap}
+
+/* Scouting: show every player field without horizontal scrolling on compact screens.
+   Desktop remains a seven-column table; mobile uses full-width player cards. */
+@media(max-width:1200px){
+ .scoutSquadPanel{
+  width:100%;max-width:100%;min-width:0;
+  overflow-x:hidden!important;box-sizing:border-box
+ }
+ .scoutSquadPanel .scoutSquadColumns{display:none!important}
+ .scoutSquadPanel .clubSquadList{
+  width:100%;min-width:0;max-width:100%;
+  overflow-x:hidden!important
+ }
+ .scoutSquadPanel .scoutSquadRow{
+  display:grid!important;
+  grid-template-columns:30px repeat(4,minmax(0,1fr))!important;
+  gap:9px 6px!important;
+  width:100%;min-width:0!important;max-width:100%;
+  padding:13px 10px!important;
+  box-sizing:border-box;
+  align-items:center;
+  overflow:hidden!important;
+ }
+ .scoutSquadPanel .scoutSquadRow>*{
+  min-width:0!important;max-width:100%;
+  order:0!important;position:static!important
+ }
+ .scoutSquadPanel .scoutSquadRow>.scoutSquadRank{
+  grid-column:1;grid-row:1;
+  justify-self:center;align-self:center;
+  font-size:14px
+ }
+ .scoutSquadPanel .scoutSquadRow>.clubSquadPlayer{
+  grid-column:2/-1;grid-row:1;
+  min-width:0!important;width:100%;
+  gap:10px;display:flex;align-items:center
+ }
+ .scoutSquadPanel .scoutSquadRow .scoutSquadPortrait{
+  display:flex;align-items:center;justify-content:center;
+  width:45px;height:45px;flex:0 0 45px;min-width:0
+ }
+ .scoutSquadPanel .scoutSquadRow .scoutSquadPortrait img,
+ .scoutSquadPanel .scoutSquadRow .scoutSquadPortrait i{
+  display:block;width:45px;height:45px;object-fit:contain;
+  border-radius:50%;flex:0 0 45px
+ }
+ .scoutSquadPanel .scoutSquadRow .scoutSquadIdentity{
+  min-width:0;flex:1;overflow:hidden
+ }
+ .scoutSquadPanel .scoutSquadRow .scoutSquadIdentity b{
+  display:block;min-width:0;font-size:14px;line-height:1.3;
+  white-space:normal;overflow-wrap:anywhere;
+  overflow:visible;text-overflow:clip
+ }
+ .scoutSquadPanel .scoutSquadRow .scoutSquadIdentity small{
+  display:block;min-width:0;font-size:11px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+ }
+ /* Actual DOM: rank, player, position, age, rating, value, action.
+    Visually: rating, position, age, value. */
+ .scoutSquadPanel .scoutSquadRow>strong:nth-child(5){
+  grid-column:1/3;grid-row:2;
+  color:#49ad60;font-size:19px;line-height:1.3
+ }
+ .scoutSquadPanel .scoutSquadRow>span:nth-child(3){
+  grid-column:3;grid-row:2
+ }
+ .scoutSquadPanel .scoutSquadRow>span:nth-child(4){
+  grid-column:4;grid-row:2
+ }
+ .scoutSquadPanel .scoutSquadRow>span:nth-child(6){
+  grid-column:5;grid-row:2
+ }
+ .scoutSquadPanel .scoutSquadRow>strong:nth-child(5),
+ .scoutSquadPanel .scoutSquadRow>span:nth-child(3),
+ .scoutSquadPanel .scoutSquadRow>span:nth-child(4),
+ .scoutSquadPanel .scoutSquadRow>span:nth-child(6){
+  min-width:0;text-align:center!important;
+  font-size:13px;white-space:nowrap
+ }
+ .scoutSquadPanel .scoutSquadRow>strong:nth-child(5){font-size:19px}
+ .scoutSquadPanel .scoutSquadRow>strong:nth-child(5)::before{content:"YF REYTİNG"}
+ .scoutSquadPanel .scoutSquadRow>span:nth-child(3)::before{content:"POZİSYON"}
+ .scoutSquadPanel .scoutSquadRow>span:nth-child(4)::before{content:"YAŞ"}
+ .scoutSquadPanel .scoutSquadRow>span:nth-child(6)::before{content:"DEĞER"}
+ .scoutSquadPanel .scoutSquadRow>strong:nth-child(5)::before,
+ .scoutSquadPanel .scoutSquadRow>span:nth-child(3)::before,
+ .scoutSquadPanel .scoutSquadRow>span:nth-child(4)::before,
+ .scoutSquadPanel .scoutSquadRow>span:nth-child(6)::before{
+  display:block;color:#8fa399;font-size:9px;font-weight:700;
+  line-height:1.3;margin-bottom:5px
+ }
+ .scoutSquadPanel .scoutSquadRow>.scoutSquadShortlist{
+  grid-column:1/-1;grid-row:3;justify-self:stretch;
+  width:100%;max-width:100%;min-height:40px;
+  margin:2px 0 0;padding:9px!important;
+  background:#193b25!important;text-align:center;
+  white-space:normal;overflow-wrap:anywhere
+ }
+}
