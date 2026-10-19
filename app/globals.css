@@ -617,3 +617,26 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
   white-space:nowrap
  }
 }
+
+/* Rakip Analizi / Oyuncu Düellosu: player names and ratings must never
+   overlap or require sideways scrolling. Keep the desktop VS layout. */
+.matchupDuel{min-width:0;max-width:100%;padding:12px;border:1px solid #294032;border-radius:12px;background:#101b15;box-sizing:border-box}
+.matchupDuelPlayers{display:grid;grid-template-columns:minmax(0,1fr) 32px minmax(0,1fr);align-items:stretch;gap:10px;min-width:0;max-width:100%}
+.matchupPlayerCard{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;min-width:0;max-width:100%;padding:12px;background:#0d1711;border:1px solid #294032;border-radius:10px;box-sizing:border-box}
+.matchupPlayerIdentity{display:flex;align-items:center;gap:10px;min-width:0}
+.matchupPlayerIdentity>img,.matchupPlayerIdentity>i{display:grid;place-items:center;width:46px;height:46px;flex:0 0 46px;border-radius:50%;object-fit:contain;background:#17231c;border:1px solid #294032;box-sizing:border-box}
+.matchupPlayerIdentity>i{font-size:12px;font-weight:700;font-style:normal;color:#9bcba7}
+.matchupPlayerMeta{display:flex;flex-direction:column;gap:4px;min-width:0}
+.matchupPlayerMeta>b{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.3;font-size:14px;color:#fff;min-width:0}
+.matchupPlayerMeta>small{display:block;min-width:0;overflow-wrap:anywhere;line-height:1.3;color:#9bcba7;font-size:11px}
+.matchupPlayerMeta>.matchupTeamLabel{color:#879b8d}
+.matchupPlayerRating{color:#49ad60;font-size:20px;white-space:nowrap;justify-self:end;font-variant-numeric:tabular-nums}
+.matchupVersus{align-self:center;justify-self:center;color:#9bcba7;font-weight:800}
+@media(max-width:750px){
+ .matchupDuel{padding:10px}
+ .matchupDuelPlayers{grid-template-columns:minmax(0,1fr);gap:7px}
+ .matchupPlayerCard{width:100%;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:12px}
+ .matchupPlayerMeta>b{font-size:15px}
+ .matchupPlayerRating{font-size:21px}
+ .matchupVersus{padding:2px 0;line-height:1.2}
+}
