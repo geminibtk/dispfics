@@ -458,3 +458,89 @@ main > aside{position:sticky;top:0;height:100vh;overflow-y:auto}
   white-space:normal;overflow-wrap:anywhere
  }
 }
+
+/* Transfer Merkezi: compact player cards on phones, no side-scrolling.
+   Applies to club and guest transfer candidates without changing data/order. */
+@media(max-width:850px){
+ .transferPage .transferPositionGroup{
+  min-width:0;width:100%;max-width:100%;padding:0!important;
+ }
+ .transferPage .transferPositionGroup>div:first-child{min-width:0;gap:8px}
+ .transferPage .transferSquadPanel{
+  width:100%;min-width:0;max-width:100%;overflow-x:hidden!important;
+  box-sizing:border-box;
+ }
+ .transferPage .transferSquadPanel .transferSquadColumns{display:none!important}
+ .transferPage .transferSquadPanel .clubSquadList{
+  width:100%;max-width:100%;min-width:0;overflow-x:hidden!important;
+ }
+ .transferPage .transferSquadPanel .transferSquadRow{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  width:100%;max-width:100%;min-width:0!important;
+  gap:9px 6px!important;padding:13px 10px!important;
+  align-items:start;overflow:visible!important;box-sizing:border-box;
+ }
+ .transferPage .transferSquadPanel .transferSquadRow>*{
+  order:0!important;min-width:0!important;max-width:100%;
+  position:static!important;box-sizing:border-box;
+ }
+ .transferPage .transferSquadPanel .transferSquadRow>.clubSquadPlayer{
+  grid-column:1/-1;grid-row:1;
+  display:flex;align-items:center;gap:10px;
+  min-width:0!important;width:100%;padding:0;
+ }
+ .transferPage .transferSquadPanel .clubSquadPlayer img,
+ .transferPage .transferSquadPanel .clubSquadPlayer i{
+  width:44px;height:44px;flex:0 0 44px;object-fit:contain;
+ }
+ .transferPage .transferSquadPanel .transferSquadIdentity{
+  flex:1;min-width:0!important;overflow:hidden;
+ }
+ .transferPage .transferSquadPanel .transferSquadIdentity b{
+  display:block;white-space:normal;overflow-wrap:anywhere;
+  overflow:visible;text-overflow:clip;font-size:14px;line-height:1.3;
+ }
+ .transferPage .transferSquadPanel .transferSquadIdentity small{
+  display:block;min-width:0;overflow:hidden;
+  white-space:nowrap;text-overflow:ellipsis;font-size:11px;
+ }
+ /* DOM: player, position, age, rating, value, delete */
+ .transferPage .transferSquadPanel .transferSquadRow>strong:nth-child(4){
+  grid-column:1;grid-row:2;color:#49ad60;font-size:18px;
+ }
+ .transferPage .transferSquadPanel .transferSquadRow>span:nth-child(2){
+  grid-column:2;grid-row:2;
+ }
+ .transferPage .transferSquadPanel .transferSquadRow>span:nth-child(3){
+  grid-column:3;grid-row:2;
+ }
+ .transferPage .transferSquadPanel .transferSquadRow>span:nth-child(5){
+  grid-column:4;grid-row:2;
+ }
+ .transferPage .transferSquadPanel .transferSquadRow>strong:nth-child(4),
+ .transferPage .transferSquadPanel .transferSquadRow>span:nth-child(2),
+ .transferPage .transferSquadPanel .transferSquadRow>span:nth-child(3),
+ .transferPage .transferSquadPanel .transferSquadRow>span:nth-child(5){
+  text-align:center!important;min-width:0!important;
+  white-space:nowrap;font-size:13px;line-height:1.3;
+ }
+ .transferPage .transferSquadPanel .transferSquadRow>strong:nth-child(4){font-size:18px}
+ .transferPage .transferSquadPanel .transferSquadRow>strong:nth-child(4)::before{content:"YF REYTİNG"}
+ .transferPage .transferSquadPanel .transferSquadRow>span:nth-child(2)::before{content:"POZİSYON"}
+ .transferPage .transferSquadPanel .transferSquadRow>span:nth-child(3)::before{content:"YAŞ"}
+ .transferPage .transferSquadPanel .transferSquadRow>span:nth-child(5)::before{content:"DEĞER"}
+ .transferPage .transferSquadPanel .transferSquadRow>strong:nth-child(4)::before,
+ .transferPage .transferSquadPanel .transferSquadRow>span:nth-child(2)::before,
+ .transferPage .transferSquadPanel .transferSquadRow>span:nth-child(3)::before,
+ .transferPage .transferSquadPanel .transferSquadRow>span:nth-child(5)::before{
+  display:block;color:#8fa399;font-size:9px;font-weight:700;
+  line-height:1.25;margin-bottom:5px;
+ }
+ .transferPage .transferSquadPanel .transferSquadRow>button:last-child{
+  grid-column:1/-1;grid-row:3;justify-self:stretch!important;
+  width:100%;max-width:100%;min-height:40px;
+  padding:9px!important;text-align:center;
+  margin-top:2px;
+ }
+}
