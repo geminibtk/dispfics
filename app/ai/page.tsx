@@ -1,5 +1,5 @@
-import {playerPlayablePositions,normalizePlayerPosition} from "../../lib/playerPositionOrder";
 "use client";
+import {playerPlayablePositions,normalizePlayerPosition} from "../../lib/playerPositionOrder";
 import {displayRating,rawRating} from "../../lib/display-rating";
 import {useEffect,useState} from "react";import {useRouter} from "next/navigation";import {createClient} from "../../lib/supabase";
 import AppShell from "../components/AppShell";import {addGuestTransfer,getGuestTransfers} from "../../lib/guestTransfers";
