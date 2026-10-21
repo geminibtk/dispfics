@@ -3,7 +3,7 @@ export function lineupMainCompare(a:any,b:any,getPositions:(p:any)=>string[]){
   if(ar!==br)return br-ar;
   const ap=getPositions(a),bp=getPositions(b);
   if(ap.length!==bp.length)return bp.length-ap.length;
-  return (ap[0]||"").localeCompare(bp[0]||"","tr") || String(a.name||"").localeCompare(String(b.name||""),"tr");
+  return (ap[0]||"").localeCompare(bp[0]||"","tr") || String(a.name||"").localeCompare(String(b.name||""),"tr") || Number(b.age??-1)-Number(a.age??-1) || Number(b.estimated_value_eur??b.market_value??-1)-Number(a.estimated_value_eur??a.market_value??-1);
 }
 
 export function orderLineupReserves(
