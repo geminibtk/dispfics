@@ -1,5 +1,5 @@
-import {playerPlayablePositions} from "../../lib/playerPositionOrder";
 "use client";
+import {playerPlayablePositions} from "../../lib/playerPositionOrder";
 import {displayRating} from "../../lib/display-rating";
 import {useEffect,useMemo,useState} from "react";
 import {useRouter} from "next/navigation";
