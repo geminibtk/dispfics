@@ -3,8 +3,13 @@ import {NextResponse} from "next/server";
 
 export async function POST(req:Request){
  try{
+  const contentLength=Number(req.headers.get("content-length")||0);
+  if(contentLength>100000)return NextResponse.json({error:"İstek boyutu çok büyük."},{status:413});
   const {message,context}=await req.json();
   if(typeof message!=="string"||!message.trim())return NextResponse.json({error:"Mesaj gerekli."},{status:400});
+  if(message.length>2000)return NextResponse.json({error:"Mesaj en fazla 2000 karakter olabilir."},{status:400});
+  if(context!==null&&context!==undefined&&(typeof context!=="object"||Array.isArray(context)))return NextResponse.json({error:"Geçersiz takım verisi."},{status:400});
+  if(JSON.stringify(context||{}).length>80000)return NextResponse.json({error:"Takım verisi çok büyük."},{status:413});
   if(!process.env.OPENAI_API_KEY)return NextResponse.json({error:"OpenAI API anahtarı sunucuda yapılandırılmamış."},{status:503});
   const client=new OpenAI({apiKey:process.env.OPENAI_API_KEY,timeout:25000,maxRetries:1});
   const res=await client.chat.completions.create({
