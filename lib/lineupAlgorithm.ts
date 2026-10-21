@@ -152,7 +152,7 @@ export function computeAutomaticLineup(
 
   // Sort every repeated role after placement, including players relocated into it.
   // Slot order is the formation's visual order: top-to-bottom or left-to-right.
-  for(const role of new Set(slots.map(s=>s.role))){
+  for(const role of Array.from(new Set(slots.map(s=>s.role)))){
     const same=slots.filter(x=>x.role===role);
     if(same.length<2)continue;
     const ids=same.map(x=>selected[x.slot]).filter(Boolean)
