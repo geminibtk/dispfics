@@ -54,7 +54,7 @@ export default function Scouting(){
    const sortCol=sort==="age"?"age":sort==="estimatedValue"?"estimated_value_eur":"overall";
    query=query.order(sortCol,{ascending:sortDirection==="asc",nullsFirst:false});
     if(sort==="overall"){
-      query=query.order("playable_position_count",{ascending:false}).order("position",{ascending:true,nullsFirst:false}).order("name",{ascending:true}).order("age",{ascending:false,nullsFirst:false}).order("estimated_value_eur",{ascending:false,nullsFirst:false});
+      query=query.order("normalized_position_count",{ascending:false}).order("normalized_position",{ascending:true,nullsFirst:false}).order("name",{ascending:true}).order("age",{ascending:false,nullsFirst:false}).order("estimated_value_eur",{ascending:false,nullsFirst:false});
     }else if(sort==="age"){
       query=query.order("overall",{ascending:false,nullsFirst:false}).order("estimated_value_eur",{ascending:false,nullsFirst:false});
     }else{
