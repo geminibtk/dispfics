@@ -3,7 +3,7 @@ export function lineupMainCompare(a:any,b:any,getPositions:(p:any)=>string[]){
   if(ar!==br)return br-ar;
   const ap=getPositions(a),bp=getPositions(b);
   if(ap.length!==bp.length)return bp.length-ap.length;
-  return (ap[0]||"").localeCompare(bp[0]||"","tr");
+  return (ap[0]||"").localeCompare(bp[0]||"","tr") || String(a.name||"").localeCompare(String(b.name||""),"tr");
 }
 
 export function orderLineupReserves(
@@ -150,7 +150,9 @@ export function computeAutomaticLineup(
     if(!place(String(p.id),null,new Set(),new Set([String(p.id)])))selected=snapshot;
   }
 
-  for(const role of Array.from(relocatedRoles)){
+  // Sort every repeated role after placement, including players relocated into it.
+  // Slot order is the formation's visual order: top-to-bottom or left-to-right.
+  for(const role of new Set(slots.map(s=>s.role))){
     const same=slots.filter(x=>x.role===role);
     if(same.length<2)continue;
     const ids=same.map(x=>selected[x.slot]).filter(Boolean)
