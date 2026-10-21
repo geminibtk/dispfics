@@ -37,7 +37,7 @@ export default function Players(){
  useEffect(()=>{load()},[]);
  const total=useMemo(()=>players.reduce((a,p)=>a+p.market_value,0),[players]);const avg=useMemo(()=>players.length?players.reduce((a,p)=>a+p.rating,0)/players.length:0,[players]);
  const aiRecommendation=useMemo(()=>getAiLineupRecommendation(players),[players]);
- const sortedSquad=useMemo(()=>{const positions=(p:Player)=>[p.position,...(p.alternatePositions||[]).map((x:any)=>typeof x==="string"?x:(x?.shortLabel||x?.label))].map(x=>String(x||"").trim()).filter((x,i,a)=>!!x&&a.indexOf(x)===i);return [...players].sort((a,b)=>b.rating-a.rating||positions(b).length-positions(a).length||(positions(a)[0]||"").localeCompare(positions(b)[0]||"","tr")||Number(b.age||0)-Number(a.age||0)||b.market_value-a.market_value)},[players]);
+ const sortedSquad=useMemo(()=>{const positions=(p:Player)=>[p.position,...(p.alternatePositions||[]).map((x:any)=>typeof x==="string"?x:(x?.shortLabel||x?.label))].map(x=>String(x||"").trim()).filter((x,i,a)=>!!x&&a.indexOf(x)===i);return [...players].sort((a,b)=>b.rating-a.rating||positions(b).length-positions(a).length||(positions(a)[0]||"").localeCompare(positions(b)[0]||"","tr")||a.name.localeCompare(b.name,"tr")||Number(b.age||0)-Number(a.age||0)||b.market_value-a.market_value)},[players]);
  function openAiAlternatives(){
   if(!aiRecommendation?.recommendations.length)return;
   const suggestions=aiRecommendation.recommendations;
