@@ -1,4 +1,5 @@
 "use client";
+import {playerPlayablePositions} from "../../../lib/playerPositionOrder";
 import {useMemo} from "react";
 import {computeAutomaticLineup} from "../../../lib/lineupAlgorithm";
 import {displayRating} from "../../../lib/display-rating";
@@ -35,7 +36,7 @@ const FORMATIONS=[
 ["5-4-1",["KL","MO","MO","SGB","SGO","SLB","SLO","SNT","STP","STP","STP"]]
 ] as const;
 type P={id:string;name:string;club:string;position:string|null;alternate_positions:unknown;overall:number|null;avatar_url?:string|null;age?:number|null;estimated_value_eur?:number|null};
-function positions(p:P):string[]{const a=[p.position,...(Array.isArray(p.alternate_positions)?p.alternate_positions.map((x:any)=>typeof x==="string"?x:x?.shortLabel||x?.label):[])];return Array.from(new Set(a.map(x=>String(x||"").trim().toLocaleUpperCase("tr-TR").replace(/Ğ/g,"G").replace(/İ/g,"I").replace(/Ş/g,"S").replace(/Ü/g,"U").replace(/Ö/g,"O").replace(/Ç/g,"C")).filter(Boolean)))}
+function positions(p:P):string[]{return playerPlayablePositions(p.position,p.alternate_positions)}
 function rank(a:P,b:P){return Number(b.overall??-1)-Number(a.overall??-1)||positions(b).length-positions(a).length||(positions(a)[0]||"").localeCompare(positions(b)[0]||"","tr")||a.name.localeCompare(b.name,"tr")||Number(b.age??-1)-Number(a.age??-1)||Number(b.estimated_value_eur??-1)-Number(a.estimated_value_eur??-1)}
 function bestLineup(players:P[],preferNatural=false){
  const sorted=[...players].sort(rank).map(p=>({...p,rating:p.overall}));
