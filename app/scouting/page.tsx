@@ -54,13 +54,13 @@ export default function Scouting(){
    const sortCol=sort==="age"?"age":sort==="estimatedValue"?"estimated_value_eur":"overall";
    query=query.order(sortCol,{ascending:sortDirection==="asc",nullsFirst:false});
     if(sort==="overall"){
-      query=query.order("playable_position_count",{ascending:false}).order("position",{ascending:true,nullsFirst:false}).order("age",{ascending:false,nullsFirst:false}).order("estimated_value_eur",{ascending:false,nullsFirst:false});
+      query=query.order("playable_position_count",{ascending:false}).order("position",{ascending:true,nullsFirst:false}).order("name",{ascending:true}).order("age",{ascending:false,nullsFirst:false}).order("estimated_value_eur",{ascending:false,nullsFirst:false});
     }else if(sort==="age"){
       query=query.order("overall",{ascending:false,nullsFirst:false}).order("estimated_value_eur",{ascending:false,nullsFirst:false});
     }else{
       query=query.order("overall",{ascending:false,nullsFirst:false}).order("age",{ascending:false,nullsFirst:false});
     }
-    const {data,error,count}=await query.order("name",{ascending:true}).range(next,next+PAGE_SIZE-1);
+    const {data,error,count}=await query.range(next,next+PAGE_SIZE-1);
    if(error)throw error;
    setRows((data||[]).map((x:any)=>({id:Number(x.external_id),name:x.name,club:x.club||"—",league:x.league||"—",nationality:x.nationality||"—",position:x.position||"—",overall:x.overall,pace:x.pace,shooting:x.shooting,passing:x.passing,dribbling:x.dribbling,defending:x.defending,physical:x.physical,avatarUrl:x.avatar_url,age:x.age,estimatedValue:x.estimated_value_eur!=null?Number(x.estimated_value_eur):undefined,alternatePositions:Array.isArray(x.alternate_positions)?x.alternate_positions.map((p:any)=>p?.shortLabel||p?.label).filter(Boolean):[],playStyles:Array.isArray(x.player_abilities)?x.player_abilities.map((p:any)=>String(p?.label||"").trim()).filter(Boolean):[],rank:x.rank})));
    setOffset(next);setResultTotal(count||0);
