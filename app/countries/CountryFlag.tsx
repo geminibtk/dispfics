@@ -7,11 +7,11 @@ async function findFlag(name:string):Promise<string>{
  if(pending.has(name))return pending.get(name)!;
  const task=(async()=>{try{
   const search=new URL("https://www.wikidata.org/w/api.php");
-  Object.entries({action:"wbsearchentities",search:name,language:"en",format:"json",origin:"*",limit:"10"}).forEach(([k,v])=>search.searchParams.set(k,v));
+  Object.entries({action:"wbsearchentities",search:name,language:"tr",format:"json",origin:"*",limit:"10"}).forEach(([k,v])=>search.searchParams.set(k,v));
   const r=await fetch(search);if(!r.ok)return "";const items=(await r.json()).search||[];
   const key=name.toLocaleLowerCase("tr-TR");
-  const item=items.find((x:any)=>x.label?.toLocaleLowerCase("tr-TR")===key&&/country|sovereign|state|nation/i.test(x.description||""))
-   ||items.find((x:any)=>/country|sovereign state|nation/i.test(x.description||""));
+  const item=items.find((x:any)=>x.label?.toLocaleLowerCase("tr-TR")===key&&/ülke|devlet|cumhuriyet|country|sovereign/i.test(x.description||""))
+   ||items.find((x:any)=>/ülke|devlet|cumhuriyet|country|sovereign/i.test(x.description||""));
   if(!item)return "";
   const url=new URL("https://www.wikidata.org/w/api.php");
   Object.entries({action:"wbgetentities",ids:item.id,props:"claims",format:"json",origin:"*"}).forEach(([k,v])=>url.searchParams.set(k,v));
