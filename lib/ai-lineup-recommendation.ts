@@ -47,5 +47,5 @@ export function getAiLineupRecommendation(players:any[]){
  const best=ranked[0];const filled=new Set(best.entries.map(x=>x.id));const counts:Record<string,number>={};const missing=best.roles.filter(role=>{counts[role]=(counts[role]||0)+1;return best.entries.filter(x=>x.role===role).length<counts[role]});
  const recommendations:{role:string;label:string;playerName:string|null}[]=missing.map(role=>({role,label:LABELS[role]||role,playerName:null as string|null}));
  if(!recommendations.length)for(const entry of best.entries.filter(x=>!referenceIds.has(x.id)))recommendations.push({role:entry.role,label:LABELS[entry.role]||entry.role,playerName:entry.player?.name||null});
- return {name:best.name,recommendations};
+ return {name:best.name,recommendations,entries:best.entries};
 }
