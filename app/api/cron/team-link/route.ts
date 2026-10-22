@@ -11,8 +11,8 @@ export async function GET(req:Request){
  if(countError)return NextResponse.json({error:"Count failed"},{status:503});
  // Cover the full roster in rotating windows; API quota and execution time still apply.
  const windowSize=1000;
- const day=Math.floor(Date.now()/86400000);
- const offset=(day%Math.max(1,Math.ceil((before||0)/windowSize)))*windowSize;
+ const hour=Math.floor(Date.now()/3600000);
+ const offset=(hour%Math.max(1,Math.ceil((before||0)/windowSize)))*windowSize;
  const {data:players,error}=await db.from("scouting_players").select("external_id,name,birthdate,club").order("external_id").range(offset,Math.min(offset+windowSize-1,(before||0)-1));
  if(error)return NextResponse.json({error:"Player fetch failed"},{status:503});
  let linked=0,ambiguous=0,notFound=0,apiErrors=0,requests=0;
