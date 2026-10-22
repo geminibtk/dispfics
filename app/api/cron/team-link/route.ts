@@ -11,8 +11,8 @@ export async function GET(req:Request){
  if(countError)return NextResponse.json({error:"Count failed"},{status:503});
  // Each run considers a bounded batch. The deterministic offset rotates by day.
  const day=Math.floor(Date.now()/86400000);
- const offset=(day%350)*50;
- const {data:players,error}=await db.from("scouting_players").select("external_id,name,birthdate,club").order("external_id").range(offset,offset+49);
+ const offset=(day%Math.max(1,Math.ceil((before||0)/15)))*15;
+ const {data:players,error}=await db.from("scouting_players").select("external_id,name,birthdate,club").order("external_id").range(offset,offset+14);
  if(error)return NextResponse.json({error:"Player fetch failed"},{status:503});
  let linked=0,ambiguous=0,notFound=0,apiErrors=0,requests=0;
  for(const p of players||[]){
