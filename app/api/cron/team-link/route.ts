@@ -9,12 +9,14 @@ export async function GET(req:Request){
  const db=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
  const {count:before,error:countError}=await db.from("scouting_players").select("*",{head:true,count:"exact"});
  if(countError)return NextResponse.json({error:"Count failed"},{status:503});
- // Each run considers a bounded batch. The deterministic offset rotates by day.
+ // Cover the full roster in rotating windows; API quota and execution time still apply.
+ const windowSize=1000;
  const day=Math.floor(Date.now()/86400000);
- const offset=(day%Math.max(1,Math.ceil((before||0)/15)))*15;
- const {data:players,error}=await db.from("scouting_players").select("external_id,name,birthdate,club").order("external_id").range(offset,offset+14);
+ const offset=(day%Math.max(1,Math.ceil((before||0)/windowSize)))*windowSize;
+ const {data:players,error}=await db.from("scouting_players").select("external_id,name,birthdate,club").order("external_id").range(offset,Math.min(offset+windowSize-1,(before||0)-1));
  if(error)return NextResponse.json({error:"Player fetch failed"},{status:503});
  let linked=0,ambiguous=0,notFound=0,apiErrors=0,requests=0;
+ const deadline=Date.now()+240000;
  for(const p of players||[]){
   if(!p.birthdate||!p.name)continue;
   const {data:existing}=await db.from("football_player_links").select("external_id").eq("external_id",p.external_id).maybeSingle();
@@ -38,10 +40,10 @@ export async function GET(req:Request){
    if(insertError){ambiguous++;continue}
    linked++;
   }catch{apiErrors++}
-  // Keep daily usage bounded even on paid accounts.
-  if(requests>=15)break;
+  // Continue until the provider quota or server execution budget is reached.
+  if(Date.now()>deadline)break;
  }
  const {count:after}=await db.from("scouting_players").select("*",{head:true,count:"exact"});
  if(before!==after)return NextResponse.json({error:"Player count changed",before,after},{status:500});
- return NextResponse.json({playerCount:after,linked,ambiguous,notFound,apiErrors,requests,offset});
+ return NextResponse.json({playerCount:after,linked,ambiguous,notFound,apiErrors,requests,offset,windowSize,totalPlayers:before});
 }
