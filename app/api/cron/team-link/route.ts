@@ -30,9 +30,9 @@ export async function GET(req:Request){
    if(body.errors&&Object.keys(body.errors).length){apiErrors++;break}
    // API search pagination may omit candidates: only accept a uniquely proven match on a complete response.
    if((body.paging?.total||1)!==1){ambiguous++;continue}
-   const matches=(body.response||[]).filter((r:any)=>fold(String(r.player?.name||""))===fold(p.name)&&String(r.player?.birth?.date||"")===String(p.birthdate).slice(0,10));
+   const matches=(body.response||[]).filter((r:any)=>fold(String((r.player||r)?.name||""))===fold(p.name)&&String((r.player||r)?.birth?.date||"")===String(p.birthdate).slice(0,10));
    if(matches.length!==1){notFound++;continue}
-   const id=Number(matches[0].player.id);
+   const id=Number((matches[0].player||matches[0]).id);
    if(!Number.isSafeInteger(id)||id<=0)continue;
    const {error:insertError}=await db.from("football_player_links").insert({external_id:p.external_id,api_football_player_id:id});
    if(insertError){ambiguous++;continue}
