@@ -30,7 +30,7 @@ export async function GET(req:Request){
    const {data:player,error:readError}=await db.from("scouting_players").select("external_id,club,league").eq("external_id",link.external_id).single();
    if(readError||!player){failed++;continue}
    const club=String(entry.team.name),league=String(entry.league.name);
-   if(player.club!==club||player.league!==league){
+   if(player.club!==club){
     // Update only the two allowed columns, and only when the previous values still match.
     let update=db.from("scouting_players").update({club,league}).eq("external_id",link.external_id);
     update=player.club===null?update.is("club",null):update.eq("club",player.club);
