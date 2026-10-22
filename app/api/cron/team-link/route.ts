@@ -21,7 +21,7 @@ export async function GET(req:Request){
   if(existing)continue;
   const search=String(p.name).trim().split(/\s+/).pop()||"";
   if(search.length<4)continue;
-  const url=`https://v3.football.api-sports.io/players?search=${encodeURIComponent(search)}&season=${new Date().getUTCFullYear()}`;
+  const url=`https://v3.football.api-sports.io/players/profiles?search=${encodeURIComponent(search)}`;
   try{
    const response=await fetch(url,{headers:{"x-apisports-key":process.env.API_FOOTBALL_KEY},cache:"no-store",signal:AbortSignal.timeout(8000)});
    requests++;
