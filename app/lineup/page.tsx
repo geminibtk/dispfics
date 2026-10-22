@@ -4,6 +4,7 @@ import {useEffect,useMemo,useRef,useState} from "react";
 import {useRouter} from "next/navigation";
 import {createClient} from "../../lib/supabase";
 import {computeAutomaticLineup} from "../../lib/lineupAlgorithm";
+import {countryPlayerFromRow,topCountryPlayers} from "../../lib/countryPlayers";
 import AppShell from "../components/AppShell";import TeamLogo from "../teams/TeamLogo";
 
 const FORMATIONS=[
@@ -43,26 +44,28 @@ const keys=FORMATIONS.map((f,i)=>({key:f[0]+"|"+i,name:f[0],roles:f[1],variant:F
 
 export default function Lineup(){
  const s=createClient(),router=useRouter(),[teamContext,setTeamContext]=useState({team:"",league:""}),teamName=teamContext.team,teamLeague=teamContext.league;
- const [contextReady,setContextReady]=useState(false);const [players,setPlayers]=useState<any[]>([]),[lineup,setLineup]=useState<any>(null);
+ const [country,setCountry]=useState("");const [contextReady,setContextReady]=useState(false);const [players,setPlayers]=useState<any[]>([]),[lineup,setLineup]=useState<any>(null);
  const [selected,setSelected]=useState<Record<string,string>>({}),[autoReserves,setAutoReserves]=useState<any[]>([]);
  const [activeSlot,setActiveSlot]=useState<string|null>(null),[formationKey,setFormationKey]=useState(""),[otherFormationKey,setOtherFormationKey]=useState(""),[msg,setMsg]=useState("");
  const topInitialized=useRef(false);
  const [guestMode,setGuestMode]=useState(false);
- const GUEST_LINEUP_KEY=teamName?"yanimdafutbol-team-lineup:"+teamLeague+":"+teamName:"yanimdafutbol-guest-lineup";
+ const GUEST_LINEUP_KEY=country?"yanimdafutbol-country-lineup:"+country:teamName?"yanimdafutbol-team-lineup:"+teamLeague+":"+teamName:"yanimdafutbol-guest-lineup";
  type TransferTarget={role:string;playerId:string|null;playerName:string|null};
  type TransferPlan={type:"required"|"upgrade";roles:string[];targets:TransferTarget[];rating:{min:number,max:number}|null;age:{min:number,max:number}|null;value:{min:number,max:number}|null};
  const formation=useMemo(()=>keys.find(x=>x.key===formationKey)||keys.find(x=>x.name==="3-4-2-1")||keys[0],[formationKey]);
  const slots=useMemo(()=>{const count:Record<string,number>={},totals:Record<string,number>={};formation.roles.forEach(r=>totals[r]=(totals[r]||0)+1);const y:Record<string,number>={KL:91,STP:77,SGB:72,SLB:72,SGK:53,SLK:53,MDO:61,MO:48,SGO:42,SLO:42,MOO:32,SNT:12};const sideX:Record<string,number>={SGB:88,SGK:87,SGO:84,SLB:12,SLK:13,SLO:16};return formation.roles.map(role=>{count[role]=(count[role]||0)+1;const n=count[role],total=totals[role];let x=sideX[role]??50;if(sideX[role]==null&&total>1){const spread=total>=3?27:31;x=50+(n-(total+1)/2)*spread}return {slot:role+"_"+n,role,x,y:y[role]||50}})},[formation]);
  async function loadGuest(){
   setGuestMode(true);
-  let query=s.from("scouting_players").select("id,name,position,alternate_positions,overall,age,estimated_value_eur,avatar_url").eq("is_active",true);if(teamName){query=query.eq("club",teamName);if(teamLeague)query=query.eq("league",teamLeague)}const {data,error}=await query.order("overall",{ascending:false}).limit(teamName?1000:200);
-  if(error){setMsg("Oyuncular yüklenemedi: "+error.message);return}if(teamName&&!(data||[]).length)setMsg("Bu takım için oyuncu bulunamadı.");
-  const squad=(data||[]).map((x:any)=>({id:String(x.id),name:x.name,position:x.position,alternatePositions:Array.isArray(x.alternate_positions)?x.alternate_positions:[],rating:Number(x.overall||0),age:x.age!=null?Number(x.age):null,marketValue:x.estimated_value_eur!=null?Number(x.estimated_value_eur):null,avatar_url:x.avatar_url||null,source:"scouting"}));
-  let saved:any=null;try{saved=JSON.parse(localStorage.getItem(GUEST_LINEUP_KEY)||"null")}catch{}if(teamName){const {data:{user}}=await s.auth.getUser();if(user){const {data:cloud,error:cloudError}=await s.from("team_lineup_saves").select("formation_key,other_formation_key,selected").eq("user_id",user.id).eq("team_name",teamName).eq("league",teamLeague).maybeSingle();if(cloudError)setMsg("Bulut kadrosu yüklenemedi: "+cloudError.message);if(cloud)saved={formationKey:cloud.formation_key,otherFormationKey:cloud.other_formation_key,selected:cloud.selected}}}try{if(saved?.formationKey&&saved?.selected&&(!teamName||Object.values(saved.selected).every((id:any)=>!id||(data||[]).some((p:any)=>String(p.id)===String(id))))){const f=keys.find(x=>x.key===saved.formationKey);if(f){topInitialized.current=true;setFormationKey(f.key);setSelected(saved.selected);setOtherFormationKey(saved.otherFormationKey||"");setMsg("Cihazdaki kayıtlı kadro yüklendi.")}}}catch{}
+  let query=s.from("scouting_players").select("id,name,nationality,position,alternate_positions,overall,age,estimated_value_eur,avatar_url").eq("is_active",true);if(country){query=query.eq("nationality",country)}else if(teamName){query=query.eq("club",teamName);if(teamLeague)query=query.eq("league",teamLeague)}let data:any[]=[];let loadError:any=null;
+  if(country){for(let offset=0;;offset+=1000){const response=await s.from("scouting_players").select("id,name,nationality,position,alternate_positions,overall,age,estimated_value_eur,avatar_url").eq("is_active",true).eq("nationality",country).order("overall",{ascending:false}).order("id").range(offset,offset+999);if(response.error){loadError=response.error;break}data.push(...(response.data||[]));if(!response.data||response.data.length<1000)break}if(data.length<26)setMsg("Bu ülkenin 26 aktif oyuncusu bulunmuyor.");else data=topCountryPlayers(data.map(countryPlayerFromRow)).map(p=>({id:p.id,name:p.name,position:p.position,alternate_positions:p.alternatePositions,overall:p.rating,age:p.age,estimated_value_eur:p.market_value,avatar_url:p.avatar_url}))}
+  else{const response=await query.order("overall",{ascending:false}).limit(teamName?1000:200);data=response.data||[];loadError=response.error}
+  if(loadError){setMsg("Oyuncular yüklenemedi: "+loadError.message);return}if(teamName&&!data.length)setMsg("Bu takım için oyuncu bulunamadı.");
+  const squad=data.map((x:any)=>({id:String(x.id),name:x.name,position:x.position,alternatePositions:Array.isArray(x.alternate_positions)?x.alternate_positions:[],rating:Number(x.overall||0),age:x.age!=null?Number(x.age):null,marketValue:x.estimated_value_eur!=null?Number(x.estimated_value_eur):null,avatar_url:x.avatar_url||null,source:"scouting"}));
+  let saved:any=null;try{saved=JSON.parse(localStorage.getItem(GUEST_LINEUP_KEY)||"null")}catch{}if(teamName&&!country){const {data:{user}}=await s.auth.getUser();if(user){const {data:cloud,error:cloudError}=await s.from("team_lineup_saves").select("formation_key,other_formation_key,selected").eq("user_id",user.id).eq("team_name",teamName).eq("league",teamLeague).maybeSingle();if(cloudError)setMsg("Bulut kadrosu yüklenemedi: "+cloudError.message);if(cloud)saved={formationKey:cloud.formation_key,otherFormationKey:cloud.other_formation_key,selected:cloud.selected}}}try{if(saved?.formationKey&&saved?.selected&&(!teamName||Object.values(saved.selected).every((id:any)=>!id||(data||[]).some((p:any)=>String(p.id)===String(id))))){const f=keys.find(x=>x.key===saved.formationKey);if(f){topInitialized.current=true;setFormationKey(f.key);setSelected(saved.selected);setOtherFormationKey(saved.otherFormationKey||"");setMsg("Cihazdaki kayıtlı kadro yüklendi.")}}}catch{}
   setPlayers(squad);
  }
  async function load(){
-  if(teamName){await loadGuest();return}
+  if(country||teamName){await loadGuest();return}
   const {data:{user}}=await s.auth.getUser();if(!user){await loadGuest();return}
   const {data:m}=await s.from("club_members").select("club_id").eq("user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(!m){await loadGuest();return}
   const {data:club}=await s.from("clubs").select("name").eq("id",m.club_id).maybeSingle();let squad:any[]=[];
@@ -73,8 +76,8 @@ export default function Lineup(){
   if(!l){const x=await s.from("lineups").insert({club_id:m.club_id,name:"İlk 11",formation:"3-4-2-1"}).select().single();l=x.data}
   setLineup(l);
  }
- useEffect(()=>{const params=new URLSearchParams(window.location.search);setTeamContext({team:params.get("team")||"",league:params.get("league")||""});setContextReady(true)},[]);
- useEffect(()=>{if(!contextReady)return;topInitialized.current=false;setPlayers([]);setSelected({});setAutoReserves([]);setFormationKey("");setOtherFormationKey("");setLineup(null);setGuestMode(false);setMsg("");load()},[contextReady,teamName,teamLeague]);
+ useEffect(()=>{const params=new URLSearchParams(window.location.search);setTeamContext({team:params.get("team")||"",league:params.get("league")||""});setCountry(params.get("country")||"");setContextReady(true)},[]);
+ useEffect(()=>{if(!contextReady)return;topInitialized.current=false;setPlayers([]);setSelected({});setAutoReserves([]);setFormationKey("");setOtherFormationKey("");setLineup(null);setGuestMode(false);setMsg("");load()},[contextReady,teamName,teamLeague,country]);
 
  function normPos(v:any){return String(v||"").toLocaleUpperCase("tr-TR").replace(/Ğ/g,"G").replace(/İ/g,"I").replace(/Ş/g,"S").replace(/Ü/g,"U").replace(/Ö/g,"O").replace(/Ç/g,"C")}
  function playerPositions(p:any){const raw=[p.position,...(p.alternatePositions||[]).map((x:any)=>typeof x==="string"?x:(x?.shortLabel||x?.label))];return raw.map(normPos).filter(Boolean).filter((v:string,i:number,a:string[])=>a.indexOf(v)===i)}
@@ -93,14 +96,14 @@ export default function Lineup(){
  async function save(){
   const vals=Object.entries(selected).filter(([,v])=>v);
   if(new Set(vals.map(x=>x[1])).size!==vals.length)return setMsg("Aynı oyuncu iki pozisyonda olamaz.");
-  if(guestMode||!lineup){try{localStorage.setItem(GUEST_LINEUP_KEY,JSON.stringify({formationKey:formation.key,otherFormationKey,selected}));setMsg("Kadro bu cihazda kaydedildi.")}catch{setMsg("Tarayıcıda kayıt yapılamadı.")}if(teamName){const {data:{user}}=await s.auth.getUser();if(user){const {error}=await s.from("team_lineup_saves").upsert({user_id:user.id,team_name:teamName,league:teamLeague,formation_key:formation.key,other_formation_key:otherFormationKey,selected,updated_at:new Date().toISOString()},{onConflict:"user_id,team_name,league"});setMsg(error?"Bulut kaydı başarısız: "+error.message:"Kadro hesabınıza kaydedildi; diğer cihazlarda da açabilirsiniz.")}}return}
+  if(guestMode||!lineup){try{localStorage.setItem(GUEST_LINEUP_KEY,JSON.stringify({formationKey:formation.key,otherFormationKey,selected}));setMsg("Kadro bu cihazda kaydedildi.")}catch{setMsg("Tarayıcıda kayıt yapılamadı.")}if(teamName&&!country){const {data:{user}}=await s.auth.getUser();if(user){const {error}=await s.from("team_lineup_saves").upsert({user_id:user.id,team_name:teamName,league:teamLeague,formation_key:formation.key,other_formation_key:otherFormationKey,selected,updated_at:new Date().toISOString()},{onConflict:"user_id,team_name,league"});setMsg(error?"Bulut kaydı başarısız: "+error.message:"Kadro hesabınıza kaydedildi; diğer cihazlarda da açabilirsiniz.")}}return}
   const {error:le}=await s.from("lineups").update({formation:formation.name}).eq("id",lineup.id);if(le)return setMsg(le.message);
   await s.from("lineup_players").delete().eq("lineup_id",lineup.id);
   if(vals.length){const rows=vals.map(([slot,id])=>{const p=players.find(x=>String(x.id)===String(id));return p?.source==="scouting"?{lineup_id:lineup.id,slot,player_id:null,scouting_player_id:id}:{lineup_id:lineup.id,slot,player_id:id,scouting_player_id:null}});const {error}=await s.from("lineup_players").insert(rows);if(error)return setMsg(error.message)}
   setMsg("İlk 11 ve diziliş kaydedildi.");
  }
 
- return <AppShell title={teamName?teamName+" • Aktif Kadro":"Aktif Kadro"} hideTitle><div className="lineupPage" style={{maxWidth:1050}}>{teamName&&<div className="lineupBack" style={{marginBottom:14}}><button type="button" className="playerBack" onClick={()=>router.push("/teams")}>← Takımlar</button></div>}
+ return <AppShell title={country?country+" • Aktif Kadro":teamName?teamName+" • Aktif Kadro":"Aktif Kadro"} hideTitle><div className="lineupPage" style={{maxWidth:1050}}>{(teamName||country)&&<div className="lineupBack" style={{marginBottom:14}}><button type="button" className="playerBack" onClick={()=>router.push(country?"/countries":"/teams")}>← {country?"Ülkeler":"Takımlar"}</button></div>}
   
   
   <small style={{color:"#49ad60"}}>İLK 11 • {formation.name}</small>
