@@ -1,6 +1,6 @@
 "use client";
 import {ReactNode,Suspense,useEffect,useState} from "react";import {usePathname,useRouter,useSearchParams} from "next/navigation";import {LayoutDashboard,Users,Search,BrainCircuit,BarChart3,Settings,Shield,Activity,Menu,X,Landmark} from "lucide-react";
-const nav=[["Genel Bakış","/",LayoutDashboard],["Oyuncu Keşfi","/scouting",Search],["Takımlar","/teams",Landmark],] as const;
+const nav=[["Genel Bakış","/",LayoutDashboard],["Oyuncu Keşfi","/scouting",Search],["Takımlar","/teams",Landmark],["Ülkeler","/countries",Shield],] as const;
 export default function AppShell({title,children,hideTitle=false}:{title:string;children:ReactNode;hideTitle?:boolean}){return <Suspense fallback={null}><AppShellContent title={title} hideTitle={hideTitle}>{children}</AppShellContent></Suspense>}
 function AppShellContent({title,children,hideTitle}:{title:string;children:ReactNode;hideTitle:boolean}){
  const router=useRouter(),path=usePathname(),searchParams=useSearchParams(),[open,setOpen]=useState(false);
