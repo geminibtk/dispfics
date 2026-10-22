@@ -16,7 +16,7 @@ export async function GET(req:Request){
  if(error)return NextResponse.json({error:"Player fetch failed"},{status:503});
  let linked=0,ambiguous=0,notFound=0,apiErrors=0,requests=0;
  for(const p of players||[]){
-  if(!p.birthdate||!p.club||!p.name)continue;
+  if(!p.birthdate||!p.name)continue;
   const {data:existing}=await db.from("football_player_links").select("external_id").eq("external_id",p.external_id).maybeSingle();
   if(existing)continue;
   const search=String(p.name).trim().split(/\s+/).pop()||"";
@@ -30,7 +30,7 @@ export async function GET(req:Request){
    if(body.errors&&Object.keys(body.errors).length){apiErrors++;break}
    // API search pagination may omit candidates: only accept a uniquely proven match on a complete response.
    if((body.paging?.total||1)!==1){ambiguous++;continue}
-   const matches=(body.response||[]).filter((r:any)=>fold(String(r.player?.name||""))===fold(p.name)&&String(r.player?.birth?.date||"")===String(p.birthdate).slice(0,10)&&Array.isArray(r.statistics)&&r.statistics.some((s:any)=>fold(String(s.team?.name||""))===fold(p.club)));
+   const matches=(body.response||[]).filter((r:any)=>fold(String(r.player?.name||""))===fold(p.name)&&String(r.player?.birth?.date||"")===String(p.birthdate).slice(0,10));
    if(matches.length!==1){notFound++;continue}
    const id=Number(matches[0].player.id);
    if(!Number.isSafeInteger(id)||id<=0)continue;
