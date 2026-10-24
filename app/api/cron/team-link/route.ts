@@ -10,14 +10,17 @@ export async function GET(req:Request){
  const {count:before,error:countError}=await db.from("scouting_players").select("*",{head:true,count:"exact"});
  if(countError)return NextResponse.json({error:"Count failed"},{status:503});
  // Cover the full roster in rotating windows; API quota and execution time still apply.
- const windowSize=1000;
+ const params=new URL(req.url).searchParams;
+ const requestedOffset=params.get("offset");
+ const requestedLimit=params.get("limit");
+ const windowSize=requestedLimit===null?100:Math.min(1000,Math.max(1,Number(requestedLimit)||100));
  const day=Math.floor(Date.now()/86400000);
- const offset=(day%Math.max(1,Math.ceil((before||0)/windowSize)))*windowSize;
+ const offset=requestedOffset===null?(day%Math.max(1,Math.ceil((before||0)/windowSize)))*windowSize:Math.min(Math.max(0,Number(requestedOffset)||0),Math.max(0,(before||0)-1));
  const {data:players,error}=await db.from("scouting_players").select("external_id,name,birthdate,club").order("external_id").range(offset,Math.min(offset+windowSize-1,(before||0)-1));
  if(error)return NextResponse.json({error:"Player fetch failed"},{status:503});
  let linked=0,ambiguous=0,notFound=0,apiErrors=0,requests=0,checked=0;
  const cache=new Map<string,any[]>();
- const deadline=Date.now()+240000;
+ const deadline=Date.now()+45000;
  for(const p of players||[]){
   if(!p.birthdate||!p.name)continue;
   const {data:existing}=await db.from("football_player_links").select("external_id").eq("external_id",p.external_id).maybeSingle();
@@ -57,5 +60,5 @@ export async function GET(req:Request){
  }
  const {count:after}=await db.from("scouting_players").select("*",{head:true,count:"exact"});
  if(before!==after)return NextResponse.json({error:"Player count changed",before,after},{status:500});
- return NextResponse.json({playerCount:after,linked,ambiguous,notFound,apiErrors,requests,checked,offset,windowSize,totalPlayers:before});
+ return NextResponse.json({playerCount:after,linked,ambiguous,notFound,apiErrors,requests,checked,offset,windowSize,nextOffset:offset+windowSize,totalPlayers:before});
 }
