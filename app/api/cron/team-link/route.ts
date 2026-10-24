@@ -15,7 +15,7 @@ export async function GET(req:Request){
  const offset=(day%Math.max(1,Math.ceil((before||0)/windowSize)))*windowSize;
  const {data:players,error}=await db.from("scouting_players").select("external_id,name,birthdate,club").order("external_id").range(offset,Math.min(offset+windowSize-1,(before||0)-1));
  if(error)return NextResponse.json({error:"Player fetch failed"},{status:503});
- let linked=0,ambiguous=0,notFound=0,apiErrors=0,requests=0;
+ let linked=0,ambiguous=0,notFound=0,apiErrors=0,requests=0,checked=0;\n const cache=new Map<string,any[]>();
  const deadline=Date.now()+240000;
  for(const p of players||[]){
   if(!p.birthdate||!p.name)continue;
@@ -23,17 +23,28 @@ export async function GET(req:Request){
   if(existing)continue;
   const search=String(p.name).trim().split(/\s+/).pop()||"";
   if(search.length<4)continue;
-  const url=`https://v3.football.api-sports.io/players/profiles?search=${encodeURIComponent(search)}`;
   try{
-   const response=await fetch(url,{headers:{"x-apisports-key":process.env.API_FOOTBALL_KEY},cache:"no-store",signal:AbortSignal.timeout(8000)});
-   requests++;
-   if(!response.ok){apiErrors++;if(response.status===429)break;continue}
-   const body=await response.json();
-   if(body.errors&&Object.keys(body.errors).length){apiErrors++;break}
-   // API search pagination may omit candidates: only accept a uniquely proven match on a complete response.
-   if((body.paging?.total||1)!==1){ambiguous++;continue}
-   const matches=(body.response||[]).filter((r:any)=>fold(String((r.player||r)?.name||""))===fold(p.name)&&String((r.player||r)?.birth?.date||"")===String(p.birthdate).slice(0,10));
-   if(matches.length!==1){notFound++;continue}
+   let profiles=cache.get(search);
+   if(!profiles){
+    profiles=[];
+    let complete=true;
+    for(let page=1;page<=10;page++){
+     const url=`https://v3.football.api-sports.io/players/profiles?search=${encodeURIComponent(search)}&page=${page}`;
+     const response=await fetch(url,{headers:{"x-apisports-key":process.env.API_FOOTBALL_KEY},cache:"no-store",signal:AbortSignal.timeout(8000)});
+     requests++;
+     if(!response.ok){apiErrors++;complete=false;break}
+     const body=await response.json();
+     if(body.errors&&Object.keys(body.errors).length){apiErrors++;complete=false;break}
+     profiles.push(...(body.response||[]));
+     if(page>=Number(body.paging?.total||1))break;
+     if(page===10)complete=false;
+    }
+    if(!complete){ambiguous++;break}
+    cache.set(search,profiles);
+   }
+   checked++;
+   const matches=profiles.filter((r:any)=>fold(String((r.player||r)?.name||""))===fold(p.name)&&String((r.player||r)?.birth?.date||"")===String(p.birthdate).slice(0,10));
+   if(matches.length!==1){if(matches.length>1)ambiguous++;else notFound++;continue}
    const id=Number((matches[0].player||matches[0]).id);
    if(!Number.isSafeInteger(id)||id<=0)continue;
    const {error:insertError}=await db.from("football_player_links").insert({external_id:p.external_id,api_football_player_id:id});
@@ -45,5 +56,5 @@ export async function GET(req:Request){
  }
  const {count:after}=await db.from("scouting_players").select("*",{head:true,count:"exact"});
  if(before!==after)return NextResponse.json({error:"Player count changed",before,after},{status:500});
- return NextResponse.json({playerCount:after,linked,ambiguous,notFound,apiErrors,requests,offset,windowSize,totalPlayers:before});
+ return NextResponse.json({playerCount:after,linked,ambiguous,notFound,apiErrors,requests,checked,offset,windowSize,totalPlayers:before});
 }
