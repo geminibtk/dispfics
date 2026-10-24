@@ -15,7 +15,8 @@ export async function GET(req:Request){
  const offset=(day%Math.max(1,Math.ceil((before||0)/windowSize)))*windowSize;
  const {data:players,error}=await db.from("scouting_players").select("external_id,name,birthdate,club").order("external_id").range(offset,Math.min(offset+windowSize-1,(before||0)-1));
  if(error)return NextResponse.json({error:"Player fetch failed"},{status:503});
- let linked=0,ambiguous=0,notFound=0,apiErrors=0,requests=0,checked=0;\n const cache=new Map<string,any[]>();
+ let linked=0,ambiguous=0,notFound=0,apiErrors=0,requests=0,checked=0;
+ const cache=new Map<string,any[]>();
  const deadline=Date.now()+240000;
  for(const p of players||[]){
   if(!p.birthdate||!p.name)continue;
