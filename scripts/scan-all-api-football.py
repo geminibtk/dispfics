@@ -36,7 +36,7 @@ for offset in range(0, TOTAL, STEP):
         sys.exit(2)
     # A window can end early on the server's time budget; do not mark it done
     # unless the endpoint confirms the entire window was processed.
-    checked = result.get("checked", 0)
+    checked = result.get("processed", 0)
     if checked < min(STEP,TOTAL-offset):
         print(f"Incomplete window at {offset} (checked={checked}); retry after checking API quota. {result}", file=sys.stderr)
         sys.exit(3)
