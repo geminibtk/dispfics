@@ -19,6 +19,7 @@ export async function GET(req:Request){
  const {data:players,error}=await db.from("scouting_players").select("external_id,name,birthdate,club").order("external_id").range(offset,Math.min(offset+windowSize-1,(before||0)-1));
  if(error)return NextResponse.json({error:"Player fetch failed"},{status:503});
  let linked=0,ambiguous=0,notFound=0,apiErrors=0,requests=0,checked=0,processed=0;
+ let apiFailure:string|null=null;
  const cache=new Map<string,any[]>();
  const deadline=Date.now()+45000;
  for(const p of players||[]){
@@ -37,9 +38,9 @@ export async function GET(req:Request){
      const url=`https://v3.football.api-sports.io/players/profiles?search=${encodeURIComponent(search)}&page=${page}`;
      const response=await fetch(url,{headers:{"x-apisports-key":process.env.API_FOOTBALL_KEY},cache:"no-store",signal:AbortSignal.timeout(8000)});
      requests++;
-     if(!response.ok){apiErrors++;complete=false;break}
+     if(!response.ok){apiErrors++;apiFailure=`HTTP ${response.status}: ${(await response.text()).slice(0,350)}`;complete=false;break}
      const body=await response.json();
-     if(body.errors&&Object.keys(body.errors).length){apiErrors++;complete=false;break}
+     if(body.errors&&Object.keys(body.errors).length){apiErrors++;apiFailure=JSON.stringify(body.errors).slice(0,350);complete=false;break}
      profiles.push(...(body.response||[]));
      if(page>=Number(body.paging?.total||1))break;
      if(page===10)complete=false;
@@ -55,11 +56,11 @@ export async function GET(req:Request){
    const {error:insertError}=await db.from("football_player_links").insert({external_id:p.external_id,api_football_player_id:id});
    if(insertError){ambiguous++;continue}
    linked++;
-  }catch{apiErrors++}
+  }catch(e){apiErrors++;apiFailure=e instanceof Error?e.message:String(e);break}
   // Continue until the provider quota or server execution budget is reached.
   if(Date.now()>deadline)break;
  }
  const {count:after}=await db.from("scouting_players").select("*",{head:true,count:"exact"});
  if(before!==after)return NextResponse.json({error:"Player count changed",before,after},{status:500});
- return NextResponse.json({playerCount:after,linked,ambiguous,notFound,apiErrors,requests,checked,processed,offset,windowSize,nextOffset:offset+windowSize,totalPlayers:before});
+ return NextResponse.json({playerCount:after,linked,ambiguous,notFound,apiErrors,requests,checked,processed,apiFailure,offset,windowSize,nextOffset:offset+windowSize,totalPlayers:before});
 }
