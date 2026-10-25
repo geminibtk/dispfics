@@ -46,7 +46,7 @@ export async function GET(req:Request){
      if(page>=Number(body.paging?.total||1))break;
      if(page===3)complete=false;
     }
-    if(!complete){ambiguous++;break}
+    if(!complete){ambiguous++;continue}
     cache.set(search,profiles);
    }
    checked++;
