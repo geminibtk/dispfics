@@ -8,6 +8,11 @@ export default function FootballImportPage(){
  const [result,setResult]=useState<any>(null);
  const [error,setError]=useState("");
  const [footballData,setFootballData]=useState<any>(null);
+ const [audit,setAudit]=useState<any>(null);
+ async function runAudit(){
+  setLoading(true);setError("");
+  try{const {data:{session}}=await createClient().auth.getSession();if(!session)throw new Error("Önce giriş yapmalısın.");const response=await fetch("/api/football-data-import?audit=1",{headers:{Authorization:"Bearer "+session.access_token},cache:"no-store"});const json=await response.json();if(!response.ok)throw new Error(json.error||"Denetim başarısız");setAudit(json)}catch(e){setError(e instanceof Error?e.message:"Bilinmeyen hata")}finally{setLoading(false)}
+ }
  async function importMatches(batch=""){
   setLoading(true);setError("");
   try{const {data:{session}}=await createClient().auth.getSession();if(!session)throw new Error("Önce giriş yapmalısın.");const response=await fetch("/api/football-data-import"+(batch?"?batch="+batch:""),{headers:{Authorization:"Bearer "+session.access_token}});const json=await response.json();if(!response.ok)throw new Error(json.error||"Aktarım başarısız");setFootballData(json)}catch(e){setError(e instanceof Error?e.message:"Bilinmeyen hata")}finally{setLoading(false)}
@@ -33,6 +38,8 @@ export default function FootballImportPage(){
    <p style={{fontSize:13,opacity:.8}}>İkinci pilot: Eredivisie, Ligue 1, Liga Portugal, Championship, Bundesliga 2, Serie B, MLS, Suudi Arabistan, İskoçya ve Belçika. Eşleşmeyen API takımları scouting profiline yönlendirilmez.</p>
    <button className="playerBack" type="button" disabled={loading} onClick={()=>importMatches()} style={{marginLeft:12}}>{loading?"Veriler alınıyor…":"Fikstür ve puan durumunu aktar"}</button>
    <div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:12}}><button className="playerBack" type="button" disabled={loading} onClick={()=>importMatches("second-a")}>İlk 5 yeni lig: Fikstür ve puan durumu</button><button className="playerBack" type="button" disabled={loading} onClick={()=>importMatches("second-b")}>Son 5 yeni lig: Fikstür ve puan durumu</button></div>
+   <button className="playerBack" type="button" disabled={loading} onClick={()=>runAudit()} style={{marginTop:12}}>15 ligin veri durumunu denetle</button>
+   {audit&&<div><h3>Lig Bazlı Veri Denetimi (2026)</h3><p>Bu denetim yalnızca veritabanındaki kayıtları sayar; API verisinin doğruluğunu tek başına garanti etmez.</p>{audit.audits?.map((r:any)=><p key={r.league}>Lig {r.league}: {r.error?"Hata: "+r.error:`${r.matched}/${r.teams} eşleşme · ${r.unresolved} açık · ${r.fixtures} fikstür · ${r.standings} puan kaydı`}</p>)}</div>}
    {footballData&&<div><h3>Fikstür ve Puan Durumu Aktarımı</h3>{footballData.results?.map((r:any)=><p key={r.league}>Lig {r.league}: {r.fixtures} maç, {r.standings} puan durumu kaydı {r.fixturesError||r.standingsError?"· Hata: "+[r.fixturesError,r.standingsError].filter(Boolean).join(", "):""}</p>)}</div>}
    {error&&<p role="alert" style={{color:"#ffaaa5"}}>{error}</p>}
   </section>
