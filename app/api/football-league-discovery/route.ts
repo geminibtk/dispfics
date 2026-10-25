@@ -100,11 +100,15 @@ async function handle(req:Request){
      const {data:prior,error:priorError}=await db.from("api_football_team_matches").select("api_team_id,local_team_name,local_league_name,status").in("api_team_id",ids);
      if(priorError)throw new Error(priorError.message);
      const byId=new Map((prior||[]).map((x:any)=>[Number(x.api_team_id),x]));
-     const safe=exact.filter((x:any)=>{const old:any=byId.get(Number(x.apiId));return !old||(old.status==="matched"&&old.local_team_name===x.localName&&old.local_league_name===item.league)});
+     const safe=exact.filter((x:any)=>{const old:any=byId.get(Number(x.apiId));return !old||(old.status==="matched"&&old.local_team_name===x.localName&&old.local_league_name===item.league)||(old.status==="unmatched"&&!old.local_team_name&&!old.local_league_name)});
      const teamRows=safe.map((x:any)=>({api_team_id:Number(x.apiId),name:x.apiName,league_id:candidate.id,season:2026}));
      const matchRows=safe.map((x:any)=>({api_team_id:Number(x.apiId),local_team_name:x.localName,local_league_name:item.league,status:"matched",candidates:[{name:x.localName,league:item.league}]}));
      if(teamRows.length){
-      const {error:teamError}=await db.from("api_football_teams").upsert(teamRows,{onConflict:"api_team_id"});
+      const {data:existingTeams,error:existingTeamsError}=await db.from("api_football_teams").select("api_team_id").in("api_team_id",teamRows.map((x:any)=>x.api_team_id));
+      if(existingTeamsError)throw new Error(existingTeamsError.message);
+      const existingIds=new Set((existingTeams||[]).map((x:any)=>Number(x.api_team_id)));
+      const newTeamRows=teamRows.filter((x:any)=>!existingIds.has(x.api_team_id));
+      const {error:teamError}=newTeamRows.length?await db.from("api_football_teams").insert(newTeamRows):{error:null};
       if(teamError)throw new Error(teamError.message);
       const {error:matchError}=await db.from("api_football_team_matches").upsert(matchRows,{onConflict:"api_team_id"});
       if(matchError)throw new Error(matchError.message);
