@@ -6,25 +6,8 @@ function normalize(v:string){return v.toLocaleLowerCase("tr-TR").normalize("NFD"
 async function resolveLogo(name:string):Promise<string>{
  const key=normalize(name);if(cache.has(key))return cache.get(key)||"";
  if(pending.has(key))return pending.get(key)!;
- const task=(async()=>{
-  try{
-   const search=new URL("https://www.wikidata.org/w/api.php");
-   Object.entries({action:"wbsearchentities",search:name,language:"en",format:"json",origin:"*",limit:"10"}).forEach(([k,v])=>search.searchParams.set(k,v));
-   const response=await fetch(search);if(!response.ok)return "";
-   const results=(await response.json()).search||[];
-   const candidate=results.find((x:any)=>normalize(x.label)===key&&/football|soccer|futbol|sports club/i.test(x.description||""))
-    ||results.find((x:any)=>normalize(x.label)===key)
-    ||results.find((x:any)=>/football|soccer|futbol/i.test(x.description||""));
-   if(!candidate)return "";
-   const entityUrl=new URL("https://www.wikidata.org/w/api.php");
-   Object.entries({action:"wbgetentities",ids:candidate.id,props:"claims",format:"json",origin:"*"}).forEach(([k,v])=>entityUrl.searchParams.set(k,v));
-   const detail=await fetch(entityUrl);if(!detail.ok)return "";
-   const entity=(await detail.json()).entities?.[candidate.id];
-   const file=entity?.claims?.P154?.find((x:any)=>typeof x.mainsnak?.datavalue?.value==="string")?.mainsnak?.datavalue?.value;
-   return file?"https://commons.wikimedia.org/wiki/Special:FilePath/"+encodeURIComponent(file)+"?width=96":"";
-  }catch{return ""}
- })();
- pending.set(key,task);const result=await task;pending.delete(key);cache.set(key,result);return result;
+ const task=(async()=>{try{const {createClient}=await import("../../lib/supabase");const {data,error}=await createClient().from("team_logo_catalog").select("image_url").eq("name",name).maybeSingle();if(error)return "";return String(data?.image_url||"")}catch{return ""}})();
+ pending.set(key,task);const result=await task;pending.delete(key);if(result)cache.set(key,result);return result;
 }
 export default function TeamLogo({name}:{name:string}){
  const [src,setSrc]=useState(()=>cache.get(normalize(name))||"");
