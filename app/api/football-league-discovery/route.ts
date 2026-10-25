@@ -17,13 +17,13 @@ const COUNTRIES:Record<string,string>={
  "Česká Liga":"Czech-Republic","CONMEBOL Libertadores":"World","CONMEBOL Sudamericana":"World"
 };
 const TEAM_ALIASES:Record<string,Record<string,string>>={
- "3. Liga":{"ssvjah nregensburg":"Jahn Regensburg","ssvjah nregensburg":"Jahn Regensburg","sgsonnenhofgrossaspach":"SG Sonnenhof Großaspach","svwehen":"SV Wehen Wiesbaden","fcviktoriakoln":"Viktoria Köln","fcsaarbrucken":"1. FC Saarbrücken","verl":"SC Verl","waldhofmannheim":"SV Waldhof Mannheim","havelse":"TSV Havelse","hoffenheimii":"TSG 1899 Hoffenheim II","stuttgartii":"VfB Stuttgart II"},
+ "3. Liga":{"ssvjahnregensburg":"Jahn Regensburg","sgsonnenhofgrossaspach":"SG Sonnenhof Großaspach","svwehen":"SV Wehen Wiesbaden","fcviktoriakoln":"Viktoria Köln","fcsaarbrucken":"1. FC Saarbrücken","verl":"SC Verl","waldhofmannheim":"SV Waldhof Mannheim","havelse":"TSV Havelse","hoffenheimii":"TSG 1899 Hoffenheim II","stuttgartii":"VfB Stuttgart II"},
  "Allsvenskan":{"hammarbyff":"Hammarby IF","sirius":"IK Sirius","aikstockholm":"AIK","halmstad":"Halmstads BK","vasterasskfk":"Västerås SK"},
  "Brack Super League":{"fcbasel1893":"FC Basel","grasshoppers":"Grasshopper Club Zürich","lausanne":"FC Lausanne-Sport"},
  "Eliteserien":{"brann":"SK Brann","lillestrom":"Lillestrøm SK","tromso":"Tromsø IL","valerenga":"Vålerenga Fotball","bodoglimt":"FK Bodø/Glimt","molde":"Molde FK","rosenborg":"Rosenborg BK","sandefjord":"Sandefjord Fotball","sarpsborg08ff":"Sarpsborg 08","start":"IK Start","aalesund":"Aalesunds FK","viking":"Viking FK","kfumoslo":"KFUM-Kameratene Oslo","fredrikstad":"Fredrikstad FK","hamkam":"HamKam Fotball"},
  "Isuzu UTE A League":{"sydney":"Sydney FC","macarthur":"Macarthur FC","auckland":"Auckland FC"},
  "K League 1":{"daejeoncitizen":"Daejeon Hana Citizen","jejuunitedfc":"Jeju SK FC","jeonbukmotors":"Jeonbuk Hyundai Motors","ulsanhyundaifc":"Ulsan HD FC","gimcheonsangmufc":"Gimcheon Sangmu"},
- "Liga BBVA MX":{"guadalajarachivas":"Guadalajara","unampumas":"Pumas U.N.A.M.","clubamerica":"América","clubqueretaro":"Gallos Blancos de Querétaro","cfpachuca":"Pachuca","atlant e fc":"Atlante","atlant efc":"Atlante","atlantefc":"Atlante","atleticosanluis":"Atlético de San Luis"},
+ "Liga BBVA MX":{"guadalajarachivas":"Guadalajara","unampumas":"Pumas U.N.A.M.","clubamerica":"América","clubqueretaro":"Gallos Blancos de Querétaro","cfpachuca":"Pachuca","atlantefc":"Atlante","atleticosanluis":"Atlético de San Luis"},
  "Ö. Bundesliga":{"redbullsalzburg":"RB Salzburg","austriavienna":"Austria Wien","scraltach":"Altach","rapidvienna":"SK Rapid","lasklinz":"LASK","ried":"SV Ried","tsvhartberg":"Hartberg","wsgwattens":"WSG Tirol"},
  "SSE Airtricity Men's Premier Division":{"stpatricksathl":"St Patrick's Athletic"}
 };
