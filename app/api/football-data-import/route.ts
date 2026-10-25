@@ -17,6 +17,23 @@ export async function GET(req:Request){
  if(user?.email?.toLowerCase()!=="gemini.btk@gmail.com")return NextResponse.json({error:"Forbidden"},{status:403});
  const batch=new URL(req.url).searchParams.get("batch");
  const selected=batch==="second-a"?SECOND_A:batch==="second-b"?SECOND_B:LEAGUES;
+ if(new URL(req.url).searchParams.get("audit")==="1"){
+  const ids=[203,39,140,78,135,88,61,94,40,79,136,253,307,179,144];
+  const audits:any[]=[];
+  for(const league of ids){
+   const [{data:teams,error:teamError},{data:fixtures,error:fixtureError},{data:standings,error:standingError}]=await Promise.all([
+    db.from("api_football_teams").select("api_team_id").eq("league_id",league).eq("season",2026),
+    db.from("api_football_fixtures").select("fixture_id").eq("league_id",league).eq("season",2026),
+    db.from("api_football_standings").select("team_id").eq("league_id",league).eq("season",2026)
+   ]);
+   if(teamError||fixtureError||standingError){audits.push({league,error:[teamError?.message,fixtureError?.message,standingError?.message].filter(Boolean).join("; ")});continue}
+   const teamIds=(teams||[]).map(x=>x.api_team_id);
+   let matched=0;
+   if(teamIds.length){const {data:matches,error:matchError}=await db.from("api_football_team_matches").select("api_team_id").in("api_team_id",teamIds).eq("status","matched");if(matchError){audits.push({league,error:matchError.message});continue}matched=matches?.length||0}
+   audits.push({league,teams:teamIds.length,matched,unresolved:teamIds.length-matched,fixtures:fixtures?.length||0,standings:standings?.length||0});
+  }
+  return NextResponse.json({season:2026,audits},{headers:{"Cache-Control":"no-store"}});
+ }
  const results:any[]=[];
  for(const league of selected){
   const result:any={league,fixtures:0,standings:0};
