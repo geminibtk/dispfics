@@ -17,7 +17,7 @@ const COUNTRIES:Record<string,string>={
  "Česká Liga":"Czech-Republic","CONMEBOL Libertadores":"World","CONMEBOL Sudamericana":"World"
 };
 function norm(s:string){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"")}
-export async function GET(req:Request){
+async function handle(req:Request){
  const token=req.headers.get("authorization")?.replace(/^Bearer /,"");
  if(!token)return NextResponse.json({error:"Unauthorized"},{status:401});
  const url=process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -49,6 +49,7 @@ export async function GET(req:Request){
   const {data:localTeams,error:localError}=await db.from("team_catalog_summary").select("name,league").limit(1000);
   if(localError)return NextResponse.json({error:localError.message},{status:502});
   const reports=[];
+  const persist=req.method==="POST";
   for(const item of selected){
    const candidate=item.candidates[0];
    try{
@@ -65,10 +66,29 @@ export async function GET(req:Request){
      if(matched)used.add(matches[0]);
      return {apiId:t.id,apiName:t.name,localName:matched?matches[0]:null,status:matched?"exact":"review"};
     });
-    reports.push({league:item.league,apiLeagueId:candidate.id,apiTeams:apiTeams.length,localTeams:locals.length,exact:comparisons.filter((x:any)=>x.status==="exact").length,review:comparisons.filter((x:any)=>x.status==="review").length,comparisons});
+    let saved=0;
+    if(persist){
+     const exact=comparisons.filter((x:any)=>x.status==="exact"&&Number.isSafeInteger(Number(x.apiId))&&Number(x.apiId)>0);
+     const ids=apiTeams.map((x:any)=>Number(x.id)).filter((x:number)=>Number.isSafeInteger(x)&&x>0);
+     const {data:prior,error:priorError}=await db.from("api_football_team_matches").select("api_team_id,local_team_name,local_league_name,status").in("api_team_id",ids);
+     if(priorError)throw new Error(priorError.message);
+     const byId=new Map((prior||[]).map((x:any)=>[Number(x.api_team_id),x]));
+     const safe=exact.filter((x:any)=>{const old:any=byId.get(Number(x.apiId));return !old||(old.status==="matched"&&old.local_team_name===x.localName&&old.local_league_name===item.league)});
+     const teamRows=safe.map((x:any)=>({api_team_id:Number(x.apiId),name:x.apiName,league_id:candidate.id,season:2026}));
+     const matchRows=safe.map((x:any)=>({api_team_id:Number(x.apiId),local_team_name:x.localName,local_league_name:item.league,status:"matched",candidates:[{name:x.localName,league:item.league}]}));
+     if(teamRows.length){
+      const {error:teamError}=await db.from("api_football_teams").upsert(teamRows,{onConflict:"api_team_id"});
+      if(teamError)throw new Error(teamError.message);
+      const {error:matchError}=await db.from("api_football_team_matches").upsert(matchRows,{onConflict:"api_team_id"});
+      if(matchError)throw new Error(matchError.message);
+      saved=matchRows.length;
+     }
+    }
+    reports.push({league:item.league,apiLeagueId:candidate.id,apiTeams:apiTeams.length,localTeams:locals.length,exact:comparisons.filter((x:any)=>x.status==="exact").length,review:comparisons.filter((x:any)=>x.status==="review").length,saved,comparisons});
    }catch(e){reports.push({league:item.league,error:e instanceof Error?e.message:"Unknown error"})}
   }
-  return NextResponse.json({season:2026,batch,eligibleLeagues:eligible.length,reports,notice:"Read-only exact-name comparison; no team links or scouting data modified."},{headers:{"Cache-Control":"no-store"}});
+  return NextResponse.json({season:2026,batch,eligibleLeagues:eligible.length,reports,notice:persist?"Exact matches saved to API-Football mapping tables only; scouting unchanged.":"Read-only exact-name comparison; no team links or scouting data modified."},{headers:{"Cache-Control":"no-store"}});
  }
  return NextResponse.json({season:2026,totalCatalogLeagues:leagues.length+PILOT.size,remaining:leagues.length,availableApiLeagues:available.length,results,notice:"Discovery only. No team matches or scouting data changed. Candidate IDs require review."},{headers:{"Cache-Control":"no-store"}});
 }
+\nexport async function GET(req:Request){return handle(req)}\nexport async function POST(req:Request){return handle(req)}\n
