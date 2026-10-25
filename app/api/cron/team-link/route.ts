@@ -35,7 +35,7 @@ export async function GET(req:Request){
    if(!profiles){
     profiles=[];
     let complete=true;
-    for(let page=1;page<=10;page++){
+    for(let page=1;page<=3;page++){
      const url=`https://v3.football.api-sports.io/players/profiles?search=${encodeURIComponent(search)}&page=${page}`;
      const response=await fetch(url,{headers:{"x-apisports-key":process.env.API_FOOTBALL_KEY},cache:"no-store",signal:AbortSignal.timeout(8000)});
      requests++;
@@ -44,7 +44,7 @@ export async function GET(req:Request){
      if(body.errors&&Object.keys(body.errors).length){apiErrors++;apiFailure=JSON.stringify(body.errors).slice(0,350);complete=false;break}
      profiles.push(...(body.response||[]));
      if(page>=Number(body.paging?.total||1))break;
-     if(page===10)complete=false;
+     if(page===3)complete=false;
     }
     if(!complete){ambiguous++;break}
     cache.set(search,profiles);
