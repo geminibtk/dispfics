@@ -49,7 +49,7 @@ export async function GET(req:Request){
     "FK Csíkszereda Miercurea Ciuc":"Csikszereda", "SC Oțelul Galați":"Otelul"
    };
    const lookup=terms[item.name]||search;
-   if(search.length<3)return {...item,status:"manual_review",candidates:[]};
+   if(search.length<3){reports.push({...item,status:"manual_review",candidates:[]});continue;}
    if(index)await new Promise(resolve=>setTimeout(resolve,index*1200));
    const response=await fetch("https://v3.football.api-sports.io/teams?search="+encodeURIComponent(lookup),{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(15000)});
    if(!response.ok)throw new Error("API HTTP "+response.status);
@@ -60,8 +60,8 @@ export async function GET(req:Request){
    const alreadyLinked=new Set((matches||[]).filter(x=>x.status==="matched").map(x=>Number(x.api_team_id)));
    const expectedCountry=EXPECTED_COUNTRIES[item.name];
    const safe=exact.length===1&&!!expectedCountry&&norm(exact[0].country)===norm(expectedCountry)&&!alreadyLinked.has(exact[0].apiId);
-   return {...item,status:safe?"exact_candidate":"manual_review",expectedCountry:expectedCountry||null,candidates:candidates.filter((x:any)=>!expectedCountry||norm(x.country)===norm(expectedCountry)).slice(0,30),exactCandidate:safe?exact[0]:null};
-  }catch(e){return {...item,status:"error",error:e instanceof Error?e.message:"Unknown error",candidates:[]}}
+   reports.push({...item,status:safe?"exact_candidate":"manual_review",expectedCountry:expectedCountry||null,candidates:candidates.filter((x:any)=>!expectedCountry||norm(x.country)===norm(expectedCountry)).slice(0,30),exactCandidate:safe?exact[0]:null});
+  }catch(e){reports.push({...item,status:"error",error:e instanceof Error?e.message:"Unknown error",candidates:[]})}
  }
  return NextResponse.json({total:remaining.length,batch,batches:Math.ceil(remaining.length/4),reports,notice:"Read-only candidate discovery. No mapping is saved. Verify team identity and country before linking."},{headers:{"Cache-Control":"no-store"}});
 }
