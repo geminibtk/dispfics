@@ -4,7 +4,7 @@ export const dynamic="force-dynamic";
 export const maxDuration=60;
 const PILOT=new Set(["Trendyol Süper Lig","Premier League","LALIGA EA SPORTS","Bundesliga","Serie A Enilive","Eredivisie","Ligue 1 McDonald's","Liga Portugal","EFL Championship","Bundesliga 2","Serie BKT","MLS","ROSHN Saudi League","Scottish Premiership","1A Pro League"]);
 const ALIASES:Record<string,string[]>={
- "3. Liga":["3. Liga"],"Brack Super League":["Super League","Swiss Super League"],"Česká Liga":["Czech Liga","1. Liga"],"CSL":["Chinese Super League","Super League"],"Finnliiga":["Veikkausliiga"],"Hellas Liga":["Super League 1"],"ISL":["Indian Super League"],"Isuzu UTE A League":["A-League"],"K League 1":["K League 1"],"LALIGA HYPERMOTION":["Segunda División","Segunda Division"],"Liga BBVA MX":["Liga MX"],"Liga do Brasil":["Serie A"],"Liga Hrvatska":["HNL"],"Ligue 2 BKT":["Ligue 2"],"LPF":["Liga Profesional Argentina"],"Ö. Bundesliga":["Bundesliga"],"SSE Airtricity Men's Premier Division":["Premier Division"],"SUPERLIGA":["Superliga"],"Ukrayina Liha":["Premier League"],"United Emirates League":["Pro League"],"Metropolitan Division":["Metropolitan Division"]};
+ "3. Liga":["3. Liga"],"Brack Super League":["Super League","Swiss Super League"],"Česká Liga":["Czech Liga","1. Liga"],"CSL":["Chinese Super League","Super League"],"Finnliiga":["Veikkausliiga"],"Hellas Liga":["Super League 1"],"ISL":["Indian Super League"],"Isuzu UTE A League":["A-League"],"K League 1":["K League 1"],"LALIGA HYPERMOTION":["Segunda División","Segunda Division"],"Liga BBVA MX":["Liga MX"],"Liga do Brasil":["Serie A"],"Liga Hrvatska":["HNL"],"Ligue 2 BKT":["Ligue 2"],"LPF":["Liga Profesional Argentina"],"Ö. Bundesliga":["Bundesliga"],"SSE Airtricity Men's Premier Division":["Premier Division"],"SUPERLIGA":["Superliga"],"Ukrayina Liha":["Premier League"],"United Emirates League":["Pro League"],"Metropolitan Division":["Superliga"],"EFL League One":["League One"],"EFL League Two":["League Two"]};
 // Country constraints prevent identically named leagues from different countries being treated as valid candidates.
 const COUNTRIES:Record<string,string>={
  "3. Liga":"Germany","Allsvenskan":"Sweden","Brack Super League":"Switzerland","CSL":"China",
@@ -14,9 +14,18 @@ const COUNTRIES:Record<string,string>={
  "Liga Hrvatska":"Croatia","Ligue 2 BKT":"France","LPF":"Argentina",
  "Ö. Bundesliga":"Austria","SSE Airtricity Men's Premier Division":"Ireland",
  "Ukrayina Liha":"Ukraine","United Emirates League":"United-Arab-Emirates",
- "Česká Liga":"Czech-Republic","CONMEBOL Libertadores":"World","CONMEBOL Sudamericana":"World"
+ "Česká Liga":"Czech-Republic","SUPERLIGA":"Romania","Metropolitan Division":"Denmark","EFL League One":"England","EFL League Two":"England","CONMEBOL Libertadores":"World","CONMEBOL Sudamericana":"World"
 };
 const TEAM_ALIASES:Record<string,Record<string,string>>={
+ "LALIGA HYPERMOTION":{"laspalmas":"UD Las Palmas","leganes":"CD Leganés","eibar":"SD Eibar","girona":"Girona FC","cordoba":"Córdoba CF","oviedo":"Real Oviedo","tenerife":"CD Tenerife","valladolid":"Real Valladolid","albacete":"Albacete Balompié","almeria":"UD Almería","cadiz":"Cádiz CF","sportinggijon":"Real Sporting de Gijón","mallorca":"RCD Mallorca","castellon":"CD Castellón","celtadevigoii":"RC Celta Fortuna","burgos":"Burgos CF","realsociedadii":"Real Sociedad B","sabadell":"CE Sabadell","eldense":"CD Eldense","adceutafc":"AD Ceuta"},
+ "LPF":{"gimnasialp":"Gimnasia y Esgrima La Plata","racingclub":"Racing Club de Avellaneda","belgranocordoba":"Belgrano de Córdoba","unionsantafe":"Unión de Santa Fe","estudianteslp":"Estudiantes de La Plata","tallerescordoba":"Talleres de Córdoba","argentinosjrs":"Argentinos Juniors","sanlorenzo":"San Lorenzo de Almagro","independrivadavia":"Independiente Rivadavia","sarmientojunin":"Sarmiento","institutocordoba":"Instituto de Córdoba","centralcordobadesantiago":"Central Córdoba","gimnasiam":"Gimnasia y Esgrima de Mendoza"},
+ "Hellas Liga":{"olympiakospiraeus":"Olympiacos","aekathensfc":"AEK"},
+ "Liga Hrvatska":{"hnkhajduksplit":"Hajduk Split"},
+ "Česká Liga":{"plzen":"Viktoria Plzeň"},
+ "United Emirates League":{"alain":"Al Ain FC (UAE)"},
+ "ISL":{"minervapunjab":"Punjab FC","bengaluru":"Bengaluru FC","chennaiyin":"Chennaiyin FC","goa":"FC Goa","keralablasters":"Kerala Blasters FC","mumbaicity":"Mumbai City FC","odisha":"Odisha FC","atkmohunbagan":"Mohun Bagan Super Giant"},
+ "Ekstraklasa":{"jagiellonia":"Jagiellonia Białystok","slaskwroclaw":"Śląsk Wrocław","wislakrakow":"Wisła Kraków","wislaplock":"Wisła Płock","zaglebielubin":"Zagłębie Lubin","cracoviakrakow":"Cracovia"},
+ "Ligue 2 BKT":{"montpellier":"Montpellier HSC","nantes":"FC Nantes","dijon":"Dijon FCO","guingamp":"En Avant Guingamp","reims":"Stade de Reims","grenoble":"Grenoble Foot 38","nancy":"AS Nancy","redstarfc93":"Red Star FC (FRANCE)","metz":"FC Metz","sochaux":"FC Sochaux","laval":"Stade Lavallois MFC","saintetienne":"AS Saint-Étienne","pau":"Pau FC","boulogne":"US Boulogne","rodez":"Rodez Aveyron Football","dunkerque":"USL Dunkerque","annecy":"FC Annecy"},
  "3. Liga":{"ssvjahnregensburg":"Jahn Regensburg","sgsonnenhofgrossaspach":"SG Sonnenhof Großaspach","svwehen":"SV Wehen Wiesbaden","fcviktoriakoln":"Viktoria Köln","fcsaarbrucken":"1. FC Saarbrücken","verl":"SC Verl","waldhofmannheim":"SV Waldhof Mannheim","havelse":"TSV Havelse","hoffenheimii":"TSG 1899 Hoffenheim II","stuttgartii":"VfB Stuttgart II"},
  "Allsvenskan":{"hammarbyff":"Hammarby IF","sirius":"IK Sirius","aikstockholm":"AIK","halmstad":"Halmstads BK","vasterasskfk":"Västerås SK"},
  "Brack Super League":{"fcbasel1893":"FC Basel","grasshoppers":"Grasshopper Club Zürich","lausanne":"FC Lausanne-Sport"},
