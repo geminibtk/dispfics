@@ -24,9 +24,9 @@ export async function GET(req:Request){
  const reports=await Promise.all(selected.map(async (item,index)=>{
   try{
    const search=item.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9 ]/g," ").replace(/\b(FC|FK|SC|TC)\b/gi,"").replace(/\s+/g," ").trim();
-   if(search.length<3)return {...item,status:"manual_review",candidates:[]};
+   // API-Football search is often substring-based: full EA names may not exist verbatim.\n   // Use distinctive club tokens for candidate discovery only; never auto-link fuzzy results.\n   const terms:Record<string,string>={\n    "Barcelona SC Guayaquil":"Barcelona", "Independiente Santa Fe":"Santa Fe",\n    "Junior de Barranquilla":"Junior", "LDU Quito":"LDU",\n    "Universidad Central de Venezuela":"UCV", "Universitario de Deportes":"Universitario",\n    "Academia Puerto Cabello":"Puerto Cabello", "Alianza Atlético de Sullana":"Alianza Atletico",\n    "Audax Italiano":"Audax", "Juventud de Las Piedras":"Juventud",\n    "Montevideo City Torque":"Torque", "O\u0027Higgins":"Higgins",\n    "Olimpia Asunción":"Olimpia", "Recoleta FC":"Recoleta",\n    "Ludogorets Razgrad":"Ludogorets", "CFR Cluj":"Cluj",\n    "FK Csíkszereda Miercurea Ciuc":"Csikszereda", "SC Oțelul Galați":"Otelul"\n   };\n   const lookup=terms[item.name]||search;\n   if(search.length<3)return {...item,status:"manual_review",candidates:[]};
    if(index)await new Promise(resolve=>setTimeout(resolve,index*1200));
-   const response=await fetch("https://v3.football.api-sports.io/teams?search="+encodeURIComponent(search),{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(15000)});
+   const response=await fetch("https://v3.football.api-sports.io/teams?search="+encodeURIComponent(lookup),{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(15000)});
    if(!response.ok)throw new Error("API HTTP "+response.status);
    const json=await response.json();
    if(json.errors&&Object.keys(json.errors).length)throw new Error("API error: "+JSON.stringify(json.errors));
