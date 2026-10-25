@@ -63,6 +63,7 @@ export async function GET(req:Request){
     const initial=(json.response||[]);
     const chileCandidates=initial.filter((x:any)=>norm(String(x.team?.country||""))==="chile"&&norm(String(x.team?.name||"")).includes("audax"));
     diagnostics.push("İsim araması: "+initial.length+" sonuç, Şili ülkesinde "+chileCandidates.length+" Audax adayı.");
+    diagnostics.push("İsim aramasındaki kayıtlar: "+initial.map((x:any)=>String(x.team?.name||"?")+" ("+String(x.team?.country||"?")+", #"+String(x.team?.id||"?")+")").join("; "));
     if(!chileCandidates.length)diagnostics.push("Şili ligi üzerinden alternatif tarama başlatıldı.");
     const seasons=chileCandidates.length?[]:[2026,2025,2024];
     const extra:any[]=[];
@@ -109,6 +110,23 @@ export async function GET(req:Request){
       }
       if(extra.length)break;
      }
+    }
+    // Search the complete Chilean team directory, independent of competition rosters.
+    if(!chileCandidates.length&&!extra.length){
+     try{
+      const directoryResponse=await fetch("https://v3.football.api-sports.io/teams?country=Chile",{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(15000)});
+      if(!directoryResponse.ok)diagnostics.push("Şili takım dizini: HTTP "+directoryResponse.status);
+      else{
+       const directoryJson=await directoryResponse.json();
+       if(directoryJson.errors&&Object.keys(directoryJson.errors).length)diagnostics.push("Şili takım dizini: "+JSON.stringify(directoryJson.errors));
+       else{
+        const teams=directoryJson.response||[];
+        const audax=teams.filter((x:any)=>norm(String(x.team?.name||"")).includes("audax"));
+        diagnostics.push("Şili takım dizini: "+teams.length+" takım, "+audax.length+" Audax adayı.");
+        extra.push(...audax);
+       }
+      }
+     }catch(e){diagnostics.push("Şili takım dizini: "+(e instanceof Error?e.message:"Bilinmeyen hata"));}
     }
     json.response=[...chileCandidates,...extra];
     if(!json.response.length)diagnostics.push("Şili takım listelerinde de Audax bulunamadı.");
