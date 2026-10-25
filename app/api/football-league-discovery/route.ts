@@ -40,5 +40,35 @@ export async function GET(req:Request){
   const candidates=available.filter((x:any)=>keys.includes(norm(x.name))&&(!COUNTRIES[league]||norm(x.country)===norm(COUNTRIES[league])));
   return {league,candidates,status:candidates.length===1?"candidate":candidates.length>1?"review":"not_found"};
  });
+ const teamBatch=new URL(req.url).searchParams.get("teamBatch");
+ if(teamBatch!==null){
+  const batch=Number(teamBatch);
+  if(!Number.isInteger(batch)||batch<0||batch>4)return NextResponse.json({error:"Invalid team batch"},{status:400});
+  const eligible=results.filter(x=>x.status==="candidate"&&x.candidates[0]?.type==="League");
+  const selected=eligible.slice(batch*5,batch*5+5);
+  const {data:localTeams,error:localError}=await db.from("team_catalog_summary").select("name,league").limit(1000);
+  if(localError)return NextResponse.json({error:localError.message},{status:502});
+  const reports=[];
+  for(const item of selected){
+   const candidate=item.candidates[0];
+   try{
+    const res=await fetch("https://v3.football.api-sports.io/teams?league="+candidate.id+"&season=2026",{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(10000)});
+    if(!res.ok)throw new Error("API HTTP "+res.status);
+    const payload=await res.json();
+    if(payload.errors&&Object.keys(payload.errors).length)throw new Error("API error");
+    const apiTeams=(payload.response||[]).map((x:any)=>({id:x.team?.id,name:String(x.team?.name||"")}));
+    const locals=(localTeams||[]).filter(x=>x.league===item.league).map(x=>String(x.name));
+    const used=new Set<string>();
+    const comparisons=apiTeams.map((t:any)=>{
+     const matches=locals.filter(n=>norm(n)===norm(t.name));
+     const matched=matches.length===1&&!used.has(matches[0]);
+     if(matched)used.add(matches[0]);
+     return {apiId:t.id,apiName:t.name,localName:matched?matches[0]:null,status:matched?"exact":"review"};
+    });
+    reports.push({league:item.league,apiLeagueId:candidate.id,apiTeams:apiTeams.length,localTeams:locals.length,exact:comparisons.filter((x:any)=>x.status==="exact").length,review:comparisons.filter((x:any)=>x.status==="review").length,comparisons});
+   }catch(e){reports.push({league:item.league,error:e instanceof Error?e.message:"Unknown error"})}
+  }
+  return NextResponse.json({season:2026,batch,eligibleLeagues:eligible.length,reports,notice:"Read-only exact-name comparison; no team links or scouting data modified."},{headers:{"Cache-Control":"no-store"}});
+ }
  return NextResponse.json({season:2026,totalCatalogLeagues:leagues.length+PILOT.size,remaining:leagues.length,availableApiLeagues:available.length,results,notice:"Discovery only. No team matches or scouting data changed. Candidate IDs require review."},{headers:{"Cache-Control":"no-store"}});
 }
