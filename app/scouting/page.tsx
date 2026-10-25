@@ -110,7 +110,7 @@ export default function Scouting(){
 
  return <AppShell title="Oyuncu Keşfi"><div>
   <div className="scoutFilters"><input placeholder="Oyuncu, takım veya ülke ara" value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")load(0,q.trim())}} style={input}/><button onClick={()=>load(0,q.trim())} disabled={loading} style={button}>Ara</button><button onClick={syncEA} disabled={loading} style={navButton}>{loading?"İşleniyor…":"YanımdaFutbol Verilerini Senkronize Et"}</button></div>
-  <details className="scoutAdvanced" open><summary>Filtrele ve Sırala</summary><div className="scoutAdvancedGrid scoutFilterLayout" style={{display:"grid",gridTemplateColumns:"repeat(6,minmax(0,1fr))",gap:12}}>
+  <details className="scoutAdvanced"><summary>Filtrele ve Sırala</summary><div className="scoutAdvancedGrid scoutFilterLayout" style={{display:"grid",gridTemplateColumns:"repeat(6,minmax(0,1fr))",gap:12}}>
    <label style={{gridColumn:"1 / -1"}}><div style={{whiteSpace:"nowrap"}}>YF Reyting</div><span style={{display:"flex",gap:6}}><input type="number" min="1" max="100" placeholder="Min" value={min} onChange={e=>setMin(e.target.value)} style={input}/><input type="number" min="1" max="100" placeholder="Max" value={maxOverall} onChange={e=>setMaxOverall(e.target.value)} style={input}/></span></label>
    
    <label style={{gridColumn:"span 2"}}>Konum<select value={pos} onChange={e=>setPos(e.target.value)} style={input}><option value="">Tüm Konumlar</option>{positions.map(x=><option key={x}>{x}</option>)}</select></label>
