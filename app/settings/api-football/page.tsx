@@ -22,7 +22,7 @@ export default function FootballImportPage(){
  return <AppShell title="API-Football Pilot"><div style={{maxWidth:900,display:"grid",gap:20}}>
   <section className="clubSquadPanel" style={{padding:24}}>
    <h2>Takım Eşleştirme Pilotu</h2>
-   <p>Süper Lig, Premier League, La Liga, Bundesliga ve Serie A (2025 sezonu). Yalnızca API-Football tablolarına kayıt yapılır; mevcut scouting verileri değiştirilmez. Sadece yetkili hesap çalıştırabilir.</p>
+   <p>Süper Lig, Premier League, La Liga, Bundesliga ve Serie A (2026–2027 sezonu). Yalnızca API-Football tablolarına kayıt yapılır; mevcut scouting verileri değiştirilmez. Sadece yetkili hesap çalıştırabilir.</p>
    <button className="playerBack" type="button" disabled={loading} onClick={run}>{loading?"API verileri alınıyor…":"Pilotu çalıştır"}</button>
    {error&&<p role="alert" style={{color:"#ffaaa5"}}>{error}</p>}
   </section>
@@ -30,7 +30,7 @@ export default function FootballImportPage(){
    <h2>Eşleştirme Raporu</h2>
    <p>Mevcut takım kataloğu: {result.existingTeams}</p>
    {(result.report||[]).map((r:any)=><div key={r.apiLeagueId||r.league} style={{borderTop:"1px solid #294032",padding:"16px 0"}}>
-    <h3>{r.league}</h3>{r.error?<p role="alert">{r.error}</p>:<><p>API takımı: {r.apiTeams} · Kesin isim eşleşmesi: {r.exactNameMatches} · Belirsiz: {r.ambiguous?.length||0} · Eşleşmeyen: {r.unmatched?.length||0} · Kaydedilen: {r.saved||0}</p>
+    <h3>{r.league}</h3>{r.error?<p role="alert">{r.error}</p>:<><p>API takımı: {r.apiTeams} · Onaylı eşleşme: {r.confirmedMatches} · Takma ad eşleşmesi: {r.aliasMatches||0} · İncelenecek: {r.ambiguous?.length||0} · Eşleşmeyen: {r.unmatched?.length||0} · Kaydedilen: {r.saved||0}</p>
     {!!r.unmatched?.length&&<details><summary>Eşleşmeyen takımlar</summary><p>{r.unmatched.join(", ")}</p></details>}
     {!!r.ambiguous?.length&&<details><summary>Belirsiz eşleşmeler</summary><p>{r.ambiguous.join(", ")}</p></details>}</>}
    </div>)}
