@@ -92,7 +92,7 @@ export async function GET(req:Request){
        }
       }catch(e){diagnostics.push("Turnuva keşfi hatası: "+(e instanceof Error?e.message:"Bilinmeyen hata"));}
      }
-     const unique=[...new Map(competitions.map(x=>[x.id,x])).values()].slice(0,3);
+     const unique=Array.from(new Map(competitions.map(x=>[x.id,x])).values()).slice(0,3);
      diagnostics.push("Alternatif turnuva sayısı: "+unique.length);
      for(const competition of unique){
       for(const season of [2026,2025]){
