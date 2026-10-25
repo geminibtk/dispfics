@@ -75,6 +75,41 @@ export async function GET(req:Request){
      extra.push(...(leagueJson.response||[]).filter((x:any)=>norm(String(x.team?.name||"")).includes("audax")));
      if(extra.length)break;
     }
+    // If top-flight rosters omit Audax, discover cup/continental competitions from API metadata.
+    if(!chileCandidates.length&&!extra.length){
+     const queries=["https://v3.football.api-sports.io/leagues?country=Chile","https://v3.football.api-sports.io/leagues?search=Sudamericana"];
+     const competitions:{id:number;name:string}[]=[];
+     for(const endpoint of queries){
+      try{
+       const lr=await fetch(endpoint,{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(10000)});
+       if(!lr.ok){diagnostics.push("Turnuva keşfi: HTTP "+lr.status);continue;}
+       const lj=await lr.json();
+       if(lj.errors&&Object.keys(lj.errors).length){diagnostics.push("Turnuva keşfi: "+JSON.stringify(lj.errors));continue;}
+       for(const x of lj.response||[]){
+        const name=String(x.league?.name||"");
+        if(/copa chile|chile cup|sudamericana/i.test(name)&&Number.isSafeInteger(Number(x.league?.id)))
+         competitions.push({id:Number(x.league.id),name});
+       }
+      }catch(e){diagnostics.push("Turnuva keşfi hatası: "+(e instanceof Error?e.message:"Bilinmeyen hata"));}
+     }
+     const unique=[...new Map(competitions.map(x=>[x.id,x])).values()].slice(0,3);
+     diagnostics.push("Alternatif turnuva sayısı: "+unique.length);
+     for(const competition of unique){
+      for(const season of [2026,2025]){
+       try{
+        const cr=await fetch("https://v3.football.api-sports.io/teams?league="+competition.id+"&season="+season,{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(10000)});
+        if(!cr.ok){diagnostics.push(competition.name+" "+season+": HTTP "+cr.status);continue;}
+        const cj=await cr.json();
+        if(cj.errors&&Object.keys(cj.errors).length){diagnostics.push(competition.name+" "+season+": "+JSON.stringify(cj.errors));continue;}
+        const found=(cj.response||[]).filter((x:any)=>norm(String(x.team?.name||"")).includes("audax")&&norm(String(x.team?.country||""))==="chile");
+        diagnostics.push(competition.name+" "+season+": "+(cj.response||[]).length+" takım, "+found.length+" Audax adayı");
+        extra.push(...found);
+        if(extra.length)break;
+       }catch(e){diagnostics.push(competition.name+" "+season+": "+(e instanceof Error?e.message:"Bilinmeyen hata"));}
+      }
+      if(extra.length)break;
+     }
+    }
     json.response=[...chileCandidates,...extra];
     if(!json.response.length)diagnostics.push("Şili takım listelerinde de Audax bulunamadı.");
    }
