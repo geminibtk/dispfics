@@ -91,4 +91,6 @@ async function handle(req:Request){
  }
  return NextResponse.json({season:2026,totalCatalogLeagues:leagues.length+PILOT.size,remaining:leagues.length,availableApiLeagues:available.length,results,notice:"Discovery only. No team matches or scouting data changed. Candidate IDs require review."},{headers:{"Cache-Control":"no-store"}});
 }
-\nexport async function GET(req:Request){return handle(req)}\nexport async function POST(req:Request){return handle(req)}\n
+
+export async function GET(req:Request){return handle(req)}
+export async function POST(req:Request){return handle(req)}
