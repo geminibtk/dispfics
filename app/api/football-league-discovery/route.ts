@@ -18,7 +18,7 @@ export async function GET(req:Request){
  if(error||user?.email?.toLowerCase()!=="gemini.btk@gmail.com")return NextResponse.json({error:"Forbidden"},{status:403});
  const {data:catalog,error:catalogError}=await db.from("team_catalog_summary").select("league").limit(1000);
  if(catalogError)return NextResponse.json({error:catalogError.message},{status:502});
- const leagues=[...new Set((catalog||[]).map(x=>String(x.league||"")))].filter(x=>x&&!PILOT.has(x)).sort();
+ const leagues=Array.from(new Set((catalog||[]).map(x=>String(x.league||"")))).filter(x=>x&&!PILOT.has(x)).sort();
  const response=await fetch("https://v3.football.api-sports.io/leagues?season=2026",{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(20000)});
  if(!response.ok)return NextResponse.json({error:"API HTTP "+response.status},{status:502});
  const json=await response.json();
