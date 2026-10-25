@@ -21,12 +21,11 @@ export async function GET(req:Request){
  const batch=Number(new URL(req.url).searchParams.get("batch")||"0");
  if(!Number.isInteger(batch)||batch<0||batch>=Math.ceil(remaining.length/4))return NextResponse.json({error:"Invalid batch"},{status:400});
  const selected=remaining.slice(batch*4,batch*4+4);
- const reports=[];
- for(const item of selected){
+ const reports=await Promise.all(selected.map(async (item,index)=>{
   try{
    const search=item.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9 ]/g," ").replace(/\b(FC|FK|SC|TC)\b/gi,"").replace(/\s+/g," ").trim();
    if(search.length<3)return {...item,status:"manual_review",candidates:[]};
-   if(reports.length)await new Promise(resolve=>setTimeout(resolve,1200));
+   if(index)await new Promise(resolve=>setTimeout(resolve,index*1200));
    const response=await fetch("https://v3.football.api-sports.io/teams?search="+encodeURIComponent(search),{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(15000)});
    if(!response.ok)throw new Error("API HTTP "+response.status);
    const json=await response.json();
@@ -37,6 +36,6 @@ export async function GET(req:Request){
    const safe=exact.length===1&&!alreadyLinked.has(exact[0].apiId);
    return {...item,status:safe?"exact_candidate":"manual_review",candidates:candidates.slice(0,20),exactCandidate:safe?exact[0]:null};
   }catch(e){return {...item,status:"error",error:e instanceof Error?e.message:"Unknown error",candidates:[]}}
- }
+ }));
  return NextResponse.json({total:remaining.length,batch,batches:Math.ceil(remaining.length/4),reports,notice:"Read-only candidate discovery. No mapping is saved. Verify team identity and country before linking."},{headers:{"Cache-Control":"no-store"}});
 }
