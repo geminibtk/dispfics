@@ -92,7 +92,7 @@ export async function POST(req:Request){
  const team=payload.response?.[0]?.team;
  if(!team||Number(team.id)!==apiId||norm(String(team.country||""))!==norm(expectedCountry))return NextResponse.json({error:"API team identity/country mismatch"},{status:409});
  if(/(?:\bU\s?\d{2}\b|\bWomen\b|\bLadies\b|\bReserves\b|\bB\b|\bW\b)/i.test(String(team.name||"")))return NextResponse.json({error:"Youth, reserve or women team requires manual review"},{status:409});
- const {data:existing,error:existingError}=await db.from("api_football_team_matches").select("api_team_id,local_team_name,local_league_name,status").or("api_team_id.eq."+apiId+",local_team_name.eq."+JSON.stringify(name));
+ const {data:existing,error:existingError}=await db.from("api_football_team_matches").select("api_team_id,local_team_name,local_league_name,status").eq("api_team_id",apiId);
  if(existingError)return NextResponse.json({error:existingError.message},{status:502});
  const conflict=(existing||[]).some((x:any)=>x.status==="matched"&&(Number(x.api_team_id)!==apiId||x.local_team_name!==name||x.local_league_name!==league));
  if(conflict)return NextResponse.json({error:"Conflicting existing mapping; nothing saved"},{status:409});
