@@ -3,6 +3,8 @@ import {createClient} from "@supabase/supabase-js";
 export const dynamic="force-dynamic";
 export const maxDuration=60;
 const LEAGUES=[203,39,140,78,135];
+const SECOND_A=[88,61,94,40,79];
+const SECOND_B=[136,253,307,179,144];
 export async function GET(req:Request){
  const token=req.headers.get("authorization")?.replace(/^Bearer /,"");
  if(!token)return NextResponse.json({error:"Unauthorized"},{status:401});
@@ -13,8 +15,10 @@ export async function GET(req:Request){
  const db=createClient(url,secret,{auth:{persistSession:false}});
  const {data:{user}}=await db.auth.getUser(token);
  if(user?.email?.toLowerCase()!=="gemini.btk@gmail.com")return NextResponse.json({error:"Forbidden"},{status:403});
+ const batch=new URL(req.url).searchParams.get("batch");
+ const selected=batch==="second-a"?SECOND_A:batch==="second-b"?SECOND_B:LEAGUES;
  const results:any[]=[];
- for(const league of LEAGUES){
+ for(const league of selected){
   const result:any={league,fixtures:0,standings:0};
   for(const kind of ["fixtures","standings"]){
    try{
