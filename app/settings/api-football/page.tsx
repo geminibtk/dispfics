@@ -28,7 +28,7 @@ export default function FootballImportPage(){
   <section className="clubSquadPanel" style={{padding:24}}>
    <h2>Takım Eşleştirme Pilotu</h2>
    <p>Süper Lig, Premier League, La Liga, Bundesliga ve Serie A (2026–2027 sezonu). Yalnızca API-Football tablolarına kayıt yapılır; mevcut scouting verileri değiştirilmez. Sadece yetkili hesap çalıştırabilir.</p>
-   <button className="playerBack" type="button" disabled={loading} onClick={run}>{loading?"API verileri alınıyor…":"Pilotu çalıştır"}</button>
+   <button className="playerBack" type="button" disabled={loading} onClick={()=>run()}>{loading?"API verileri alınıyor…":"Pilotu çalıştır"}</button>
    <div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:12}}><button className="playerBack" type="button" disabled={loading} onClick={()=>run("second-a")}>2. Pilot: İlk 5 lig</button><button className="playerBack" type="button" disabled={loading} onClick={()=>run("second-b")}>2. Pilot: Son 5 lig</button></div>
    <p style={{fontSize:13,opacity:.8}}>İkinci pilot: Eredivisie, Ligue 1, Liga Portugal, Championship, Bundesliga 2, Serie B, MLS, Suudi Arabistan, İskoçya ve Belçika. Eşleşmeyen API takımları scouting profiline yönlendirilmez.</p>
    <button className="playerBack" type="button" disabled={loading} onClick={importMatches} style={{marginLeft:12}}>{loading?"Veriler alınıyor…":"Fikstür ve puan durumunu aktar"}</button>
