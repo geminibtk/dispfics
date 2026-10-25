@@ -16,6 +16,17 @@ const COUNTRIES:Record<string,string>={
  "Ukrayina Liha":"Ukraine","United Emirates League":"United-Arab-Emirates",
  "Česká Liga":"Czech-Republic","CONMEBOL Libertadores":"World","CONMEBOL Sudamericana":"World"
 };
+const TEAM_ALIASES:Record<string,Record<string,string>>={
+ "3. Liga":{"ssvjah nregensburg":"Jahn Regensburg","ssvjah nregensburg":"Jahn Regensburg","sgsonnenhofgrossaspach":"SG Sonnenhof Großaspach","svwehen":"SV Wehen Wiesbaden","fcviktoriakoln":"Viktoria Köln","fcsaarbrucken":"1. FC Saarbrücken","verl":"SC Verl","waldhofmannheim":"SV Waldhof Mannheim","havelse":"TSV Havelse","hoffenheimii":"TSG 1899 Hoffenheim II","stuttgartii":"VfB Stuttgart II"},
+ "Allsvenskan":{"hammarbyff":"Hammarby IF","sirius":"IK Sirius","aikstockholm":"AIK","halmstad":"Halmstads BK","vasterasskfk":"Västerås SK"},
+ "Brack Super League":{"fcbasel1893":"FC Basel","grasshoppers":"Grasshopper Club Zürich","lausanne":"FC Lausanne-Sport"},
+ "Eliteserien":{"brann":"SK Brann","lillestrom":"Lillestrøm SK","tromso":"Tromsø IL","valerenga":"Vålerenga Fotball","bodoglimt":"FK Bodø/Glimt","molde":"Molde FK","rosenborg":"Rosenborg BK","sandefjord":"Sandefjord Fotball","sarpsborg08ff":"Sarpsborg 08","start":"IK Start","aalesund":"Aalesunds FK","viking":"Viking FK","kfumoslo":"KFUM-Kameratene Oslo","fredrikstad":"Fredrikstad FK","hamkam":"HamKam Fotball"},
+ "Isuzu UTE A League":{"sydney":"Sydney FC","macarthur":"Macarthur FC","auckland":"Auckland FC"},
+ "K League 1":{"daejeoncitizen":"Daejeon Hana Citizen","jejuunitedfc":"Jeju SK FC","jeonbukmotors":"Jeonbuk Hyundai Motors","ulsanhyundaifc":"Ulsan HD FC","gimcheonsangmufc":"Gimcheon Sangmu"},
+ "Liga BBVA MX":{"guadalajarachivas":"Guadalajara","unampumas":"Pumas U.N.A.M.","clubamerica":"América","clubqueretaro":"Gallos Blancos de Querétaro","cfpachuca":"Pachuca","atlant e fc":"Atlante","atlant efc":"Atlante","atlantefc":"Atlante","atleticosanluis":"Atlético de San Luis"},
+ "Ö. Bundesliga":{"redbullsalzburg":"RB Salzburg","austriavienna":"Austria Wien","scraltach":"Altach","rapidvienna":"SK Rapid","lasklinz":"LASK","ried":"SV Ried","tsvhartberg":"Hartberg","wsgwattens":"WSG Tirol"},
+ "SSE Airtricity Men's Premier Division":{"stpatricksathl":"St Patrick's Athletic"}
+};
 function norm(s:string){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"")}
 async function handle(req:Request){
  const token=req.headers.get("authorization")?.replace(/^Bearer /,"");
@@ -61,14 +72,16 @@ async function handle(req:Request){
     const locals=(localTeams||[]).filter(x=>x.league===item.league).map(x=>String(x.name));
     const used=new Set<string>();
     const comparisons=apiTeams.map((t:any)=>{
-     const matches=locals.filter(n=>norm(n)===norm(t.name));
+     const exactMatches=locals.filter(n=>norm(n)===norm(t.name));
+     const aliasName=TEAM_ALIASES[item.league]?.[norm(t.name)];
+     const matches=exactMatches.length?exactMatches:aliasName?locals.filter(n=>n===aliasName):[];
      const matched=matches.length===1&&!used.has(matches[0]);
      if(matched)used.add(matches[0]);
-     return {apiId:t.id,apiName:t.name,localName:matched?matches[0]:null,status:matched?"exact":"review"};
+     return {apiId:t.id,apiName:t.name,localName:matched?matches[0]:null,status:matched?(exactMatches.length?"exact":"alias"):"review"};
     });
     let saved=0;
     if(persist){
-     const exact=comparisons.filter((x:any)=>x.status==="exact"&&Number.isSafeInteger(Number(x.apiId))&&Number(x.apiId)>0);
+     const exact=comparisons.filter((x:any)=>(x.status==="exact"||x.status==="alias")&&Number.isSafeInteger(Number(x.apiId))&&Number(x.apiId)>0);
      const ids=apiTeams.map((x:any)=>Number(x.id)).filter((x:number)=>Number.isSafeInteger(x)&&x>0);
      const {data:prior,error:priorError}=await db.from("api_football_team_matches").select("api_team_id,local_team_name,local_league_name,status").in("api_team_id",ids);
      if(priorError)throw new Error(priorError.message);
@@ -84,10 +97,10 @@ async function handle(req:Request){
       saved=matchRows.length;
      }
     }
-    reports.push({league:item.league,apiLeagueId:candidate.id,apiTeams:apiTeams.length,localTeams:locals.length,exact:comparisons.filter((x:any)=>x.status==="exact").length,review:comparisons.filter((x:any)=>x.status==="review").length,saved,comparisons});
+    reports.push({league:item.league,apiLeagueId:candidate.id,apiTeams:apiTeams.length,localTeams:locals.length,exact:comparisons.filter((x:any)=>x.status==="exact").length,alias:comparisons.filter((x:any)=>x.status==="alias").length,review:comparisons.filter((x:any)=>x.status==="review").length,saved,comparisons});
    }catch(e){reports.push({league:item.league,error:e instanceof Error?e.message:"Unknown error"})}
   }
-  return NextResponse.json({season:2026,batch,eligibleLeagues:eligible.length,reports,notice:persist?"Exact matches saved to API-Football mapping tables only; scouting unchanged.":"Read-only exact-name comparison; no team links or scouting data modified."},{headers:{"Cache-Control":"no-store"}});
+  return NextResponse.json({season:2026,batch,eligibleLeagues:eligible.length,reports,notice:persist?"Exact and curated alias matches saved to API-Football mapping tables only; scouting unchanged.":"Read-only exact-name comparison; no team links or scouting data modified."},{headers:{"Cache-Control":"no-store"}});
  }
  return NextResponse.json({season:2026,totalCatalogLeagues:leagues.length+PILOT.size,remaining:leagues.length,availableApiLeagues:available.length,results,notice:"Discovery only. No team matches or scouting data changed. Candidate IDs require review."},{headers:{"Cache-Control":"no-store"}});
 }
