@@ -10,7 +10,12 @@ const ALIASES:Record<number,Record<string,string>>={
  203:{basaksehir:"İstanbul Başakşehir FK",alanyaspor:"Corendon Alanyaspor"},
  140:{barcelona:"FC Barcelona",atleticomadrid:"Atlético de Madrid"},
  78:{bayerleverkusen:"Bayer 04 Leverkusen"},
- 135:{acmilan:"Milano FC",asroma:"Roma"}
+ 135:{acmilan:"Milano FC",asroma:"Roma"},
+ 136:{virtusentella:"Entella",vicenzavirtus:"Vicenza"},
+ 253:{newyorkredbulls:"Red Bull New York",sportingkansascity:"Sporting KC",chicagofire:"Chicago Fire FC",austin:"Austin FC",charlotte:"Charlotte FC",stlouiscity:"St. Louis City SC",sandiego:"San Diego FC"},
+ 307:{alqadisiyahfc:"Al Qadsiah",altaawon:"Al Taawoun",alhazm:"Al Hazem",abha:"Abha Club",neom:"NEOM SC",aldiriyah:"Diriyah Club",alkhaleejsaihat:"Al Khaleej",alahlijeddah:"Al Ahli",alfaisalyfc:"Al Faisaly",alhilalsaudifc:"Al Hilal",alittihadfc:"Al Ittihad"},
+ 179:{dundee:"Dundee FC",dundeeutd:"Dundee United"},
+ 144:{lommelunited:"Lommel SK",sttruiden:"Sint-Truiden",unionstgilloise:"Union Saint-Gilloise",kvcwesterlo:"Westerlo",clubbruggekv:"Club Brugge"}
 };
 function candidatesFor(name:string,league:{id:number,name:string},existing:{name:string,league:string,key:string}[]){
  const key=normalize(name);
