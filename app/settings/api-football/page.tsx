@@ -12,13 +12,13 @@ export default function FootballImportPage(){
   setLoading(true);setError("");
   try{const {data:{session}}=await createClient().auth.getSession();if(!session)throw new Error("Önce giriş yapmalısın.");const response=await fetch("/api/football-data-import",{headers:{Authorization:"Bearer "+session.access_token}});const json=await response.json();if(!response.ok)throw new Error(json.error||"Aktarım başarısız");setFootballData(json)}catch(e){setError(e instanceof Error?e.message:"Bilinmeyen hata")}finally{setLoading(false)}
  }
- async function run(){
+ async function run(batch=""){
   setLoading(true);setError("");setResult(null);
   try{
    const supabase=createClient();
    const {data:{session}}=await supabase.auth.getSession();
    if(!session)throw new Error("Önce yetkili hesabınla giriş yapmalısın.");
-   const response=await fetch("/api/football-match-report",{headers:{Authorization:"Bearer "+session.access_token},cache:"no-store"});
+   const response=await fetch("/api/football-match-report"+(batch?"?batch="+batch:""),{headers:{Authorization:"Bearer "+session.access_token},cache:"no-store"});
    const json=await response.json();
    if(!response.ok)throw new Error(json.error||"API raporu çalıştırılamadı.");
    setResult(json);
@@ -29,6 +29,8 @@ export default function FootballImportPage(){
    <h2>Takım Eşleştirme Pilotu</h2>
    <p>Süper Lig, Premier League, La Liga, Bundesliga ve Serie A (2026–2027 sezonu). Yalnızca API-Football tablolarına kayıt yapılır; mevcut scouting verileri değiştirilmez. Sadece yetkili hesap çalıştırabilir.</p>
    <button className="playerBack" type="button" disabled={loading} onClick={run}>{loading?"API verileri alınıyor…":"Pilotu çalıştır"}</button>
+   <div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:12}}><button className="playerBack" type="button" disabled={loading} onClick={()=>run("second-a")}>2. Pilot: İlk 5 lig</button><button className="playerBack" type="button" disabled={loading} onClick={()=>run("second-b")}>2. Pilot: Son 5 lig</button></div>
+   <p style={{fontSize:13,opacity:.8}}>İkinci pilot: Eredivisie, Ligue 1, Liga Portugal, Championship, Bundesliga 2, Serie B, MLS, Suudi Arabistan, İskoçya ve Belçika. Eşleşmeyen API takımları scouting profiline yönlendirilmez.</p>
    <button className="playerBack" type="button" disabled={loading} onClick={importMatches} style={{marginLeft:12}}>{loading?"Veriler alınıyor…":"Fikstür ve puan durumunu aktar"}</button>
    {footballData&&<div><h3>Fikstür ve Puan Durumu Aktarımı</h3>{footballData.results?.map((r:any)=><p key={r.league}>Lig {r.league}: {r.fixtures} maç, {r.standings} puan durumu kaydı {r.fixturesError||r.standingsError?"· Hata: "+[r.fixturesError,r.standingsError].filter(Boolean).join(", "):""}</p>)}</div>}
    {error&&<p role="alert" style={{color:"#ffaaa5"}}>{error}</p>}
