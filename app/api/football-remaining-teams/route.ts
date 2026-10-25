@@ -59,9 +59,12 @@ export async function GET(req:Request){
    // Audax Italiano sometimes has no search candidates; fall back to Chilean league rosters.
    // League 265 is Chile Primera División. Discover IDs only; never auto-link.
    const diagnostics:string[]=[];
-   if(item.name==="Audax Italiano" && !(json.response||[]).length){
-    diagnostics.push("İsim araması sonuç döndürmedi; Şili ligi taranıyor.");
-    const seasons=[2026,2025,2024];
+   if(item.name==="Audax Italiano"){
+    const initial=(json.response||[]);
+    const chileCandidates=initial.filter((x:any)=>norm(String(x.team?.country||""))==="chile"&&norm(String(x.team?.name||"")).includes("audax"));
+    diagnostics.push("İsim araması: "+initial.length+" sonuç, Şili ülkesinde "+chileCandidates.length+" Audax adayı.");
+    if(!chileCandidates.length)diagnostics.push("Şili ligi üzerinden alternatif tarama başlatıldı.");
+    const seasons=chileCandidates.length?[]:[2026,2025,2024];
     const extra:any[]=[];
     for(const season of seasons){
      const leagueResponse=await fetch("https://v3.football.api-sports.io/teams?league=265&season="+season,{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(15000)});
@@ -72,7 +75,8 @@ export async function GET(req:Request){
      extra.push(...(leagueJson.response||[]).filter((x:any)=>norm(String(x.team?.name||"")).includes("audax")));
      if(extra.length)break;
     }
-    json.response=extra;
+    json.response=[...chileCandidates,...extra];
+    if(!json.response.length)diagnostics.push("Şili takım listelerinde de Audax bulunamadı.");
    }
    const candidates=(json.response||[]).map((x:any)=>({apiId:Number(x.team?.id),apiName:String(x.team?.name||""),country:String(x.team?.country||""),founded:x.team?.founded||null})).filter((x:any)=>Number.isSafeInteger(x.apiId));
    const exact=candidates.filter((x:any)=>norm(x.apiName)===norm(item.name));
