@@ -7,7 +7,7 @@ SECRET = os.environ.get("CRON_SECRET")
 if not SECRET:
     sys.exit("Set CRON_SECRET in your environment first (do not commit or share it).")
 TOTAL = 17849
-STEP = 100
+STEP = 7
 REPORT = "team-link-scan-results.jsonl"
 print(f"Scanning {TOTAL} players via API-Football. Progress saved to {REPORT}.", flush=True)
 completed = set()
@@ -44,5 +44,6 @@ for offset in range(0, TOTAL, STEP):
     with open(REPORT, "a", encoding="utf-8") as f:
         f.write(json.dumps(result, ensure_ascii=False) + "\n")
     print(f"{min(offset+STEP,TOTAL)}/{TOTAL} processed, new matches={result.get('linked',0)}", flush=True)
-    time.sleep(1)
+    # The free plan allows 10 requests/minute; keep a conservative one-minute interval.
+    time.sleep(65)
 print("All windows checked. Review matches before updating club/league.")
