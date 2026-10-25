@@ -38,7 +38,7 @@ const FORMATIONS=[
 type P={id:string;name:string;club:string;position:string|null;alternate_positions:unknown;overall:number|null;avatar_url?:string|null;age?:number|null;estimated_value_eur?:number|null};
 function positions(p:P):string[]{return playerPlayablePositions(p.position,p.alternate_positions)}
 function rank(a:P,b:P){return Number(b.overall??-1)-Number(a.overall??-1)||positions(b).length-positions(a).length||(positions(a)[0]||"").localeCompare(positions(b)[0]||"","tr")||a.name.localeCompare(b.name,"tr")||Number(b.age??-1)-Number(a.age??-1)||Number(b.estimated_value_eur??-1)-Number(a.estimated_value_eur??-1)}
-function bestLineup(players:P[],preferNatural=false){
+function bestLineup(players:P[]){
  const sorted=[...players].sort(rank).map(p=>({...p,rating:p.overall}));
  const referenceIds=new Set(sorted.slice(0,11).map(p=>String(p.id)));
  const byId=new Map(sorted.map(p=>[String(p.id),p]));
@@ -60,14 +60,16 @@ function bestLineup(players:P[],preferNatural=false){
  });
  // Keep formation selection identical to the AI formation on the Active Squad page.
  options.sort((a,b)=>{
-  const first=(preferNatural?b.primaryCount-a.primaryCount||b.score-a.score:b.score-a.score||b.primaryCount-a.primaryCount)||a.placement-b.placement||a.top11Placement-b.top11Placement;
-  if(first)return first;
-  for(let i=0;i<a.placementByPlayer.length;i++){
+  // Use the exact same ranking-first formation preference as Active Squad.
+  for(let i=0;i<Math.max(a.placementByPlayer.length,b.placementByPlayer.length);i++){
    const av=a.placementByPlayer[i],bv=b.placementByPlayer[i];
-   if(av===bv)continue;
-   if(av==null)return 1;
-   if(bv==null)return -1;
-   return av-bv;
+   if((av==null)!==(bv==null))return av==null?1:-1;
+  }
+  const first=a.placement-b.placement||a.top11Placement-b.top11Placement;
+  if(first)return first;
+  for(let i=0;i<Math.max(a.placementByPlayer.length,b.placementByPlayer.length);i++){
+   const av=a.placementByPlayer[i],bv=b.placementByPlayer[i];
+   if(av!=null&&bv!=null&&av!==bv)return av-bv;
   }
   return a.index-b.index;
  });
@@ -76,4 +78,4 @@ function bestLineup(players:P[],preferNatural=false){
 function initials(name:string){return name.trim().split(/\s+/).slice(0,2).map(part=>part[0]||"").join("").toLocaleUpperCase("tr-TR")}
 function formatDuelValue(value:number|null|undefined){if(value==null||!Number.isFinite(Number(value)))return "—";const n=Number(value);return n>=1000000?"€"+Math.round(n/1000000).toLocaleString("tr-TR")+"M":n>=1000?"€"+(n/1000).toLocaleString("tr-TR",{maximumFractionDigits:0})+"K":"€"+n.toLocaleString("tr-TR")}
 function playerCard(player:P){return <div className="matchupPlayerCard"><span className="matchupPlayerIdentity">{player.avatar_url?<img src={player.avatar_url} alt="" loading="lazy"/>:<i>{initials(player.name)}</i>}<span className="matchupPlayerMeta"><b>{player.name}</b><small>Yaş: {player.age??"—"} · Değer: {formatDuelValue(player.estimated_value_eur)}</small></span></span><span className="matchupPlayerRating"><small style={{display:"block",fontSize:10,color:"#9bcba7",textAlign:"right"}}>Reyting</small>{player.overall==null?"—":displayRating(player.overall)}</span></div>}
-export default function PlayerMatchup({team,opponent,players}:{team:string;opponent:string;players:P[]}){const own=useMemo(()=>bestLineup(players.filter(p=>p.club===team)),[players,team]);const other=useMemo(()=>bestLineup(players.filter(p=>p.club===opponent),true),[players,opponent]);const rows=matchLineupRoles(own,other,rank);return <section className="module" style={{display:"grid",gap:14}}><h2>Oyuncu Düellosu</h2>{rows.length?rows.map((x,i)=><div key={x.role+i} className="matchupDuel"><div className="matchupDuelPlayers">{playerCard(x.a)}<strong className="matchupVersus">VS</strong>{playerCard(x.b)}</div></div>):<p>Karşılaştırılacak oyuncu bulunamadı.</p>}</section>}
+export default function PlayerMatchup({team,opponent,players}:{team:string;opponent:string;players:P[]}){const own=useMemo(()=>bestLineup(players.filter(p=>p.club===team)),[players,team]);const other=useMemo(()=>bestLineup(players.filter(p=>p.club===opponent)),[players,opponent]);const rows=matchLineupRoles(own,other,rank);return <section className="module" style={{display:"grid",gap:14}}><h2>Oyuncu Düellosu</h2>{rows.length?rows.map((x,i)=><div key={x.role+i} className="matchupDuel"><div className="matchupDuelPlayers">{playerCard(x.a)}<strong className="matchupVersus">VS</strong>{playerCard(x.b)}</div></div>):<p>Karşılaştırılacak oyuncu bulunamadı.</p>}</section>}
