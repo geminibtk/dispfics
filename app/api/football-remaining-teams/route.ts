@@ -58,14 +58,17 @@ export async function GET(req:Request){
    if(json.errors&&Object.keys(json.errors).length)throw new Error("API error: "+JSON.stringify(json.errors));
    // Audax Italiano sometimes has no search candidates; fall back to Chilean league rosters.
    // League 265 is Chile Primera División. Discover IDs only; never auto-link.
+   const diagnostics:string[]=[];
    if(item.name==="Audax Italiano" && !(json.response||[]).length){
+    diagnostics.push("İsim araması sonuç döndürmedi; Şili ligi taranıyor.");
     const seasons=[2026,2025,2024];
     const extra:any[]=[];
     for(const season of seasons){
      const leagueResponse=await fetch("https://v3.football.api-sports.io/teams?league=265&season="+season,{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(15000)});
-     if(!leagueResponse.ok)continue;
+     if(!leagueResponse.ok){diagnostics.push("Şili ligi "+season+": HTTP "+leagueResponse.status);continue;}
      const leagueJson=await leagueResponse.json();
-     if(leagueJson.errors&&Object.keys(leagueJson.errors).length)continue;
+     if(leagueJson.errors&&Object.keys(leagueJson.errors).length){diagnostics.push("Şili ligi "+season+": "+JSON.stringify(leagueJson.errors));continue;}
+     diagnostics.push("Şili ligi "+season+": "+(leagueJson.response||[]).length+" takım, "+(leagueJson.response||[]).filter((x:any)=>norm(String(x.team?.name||"")).includes("audax")).length+" Audax adayı");
      extra.push(...(leagueJson.response||[]).filter((x:any)=>norm(String(x.team?.name||"")).includes("audax")));
      if(extra.length)break;
     }
@@ -76,7 +79,7 @@ export async function GET(req:Request){
    const alreadyLinked=new Set((matches||[]).filter(x=>x.status==="matched").map(x=>Number(x.api_team_id)));
    const expectedCountry=EXPECTED_COUNTRIES[item.name];
    const safe=exact.length===1&&!!expectedCountry&&norm(exact[0].country)===norm(expectedCountry)&&!alreadyLinked.has(exact[0].apiId);
-   reports.push({...item,status:safe?"exact_candidate":"manual_review",expectedCountry:expectedCountry||null,candidates:candidates.filter((x:any)=>!expectedCountry||norm(x.country)===norm(expectedCountry)).slice(0,30),exactCandidate:safe?exact[0]:null});
+   reports.push({...item,status:safe?"exact_candidate":"manual_review",diagnostics,expectedCountry:expectedCountry||null,candidates:candidates.filter((x:any)=>!expectedCountry||norm(x.country)===norm(expectedCountry)).slice(0,30),exactCandidate:safe?exact[0]:null});
   }catch(e){reports.push({...item,status:"error",error:e instanceof Error?e.message:"Unknown error",candidates:[]})}
  }
  return NextResponse.json({total:remaining.length,batch,batches:Math.ceil(remaining.length/4),reports,notice:"Read-only candidate discovery. No mapping is saved. Verify team identity and country before linking."},{headers:{"Cache-Control":"no-store"}});
