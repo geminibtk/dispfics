@@ -7,8 +7,9 @@ export default function Home(){const router=useRouter();return <AppShell title="
 function Dashboard({router}:any){const [club,setClub]=useState<any>(null);const [players,setPlayers]=useState<any[]>([]);const [metrics,setMetrics]=useState<any[]>([]);const [matches,setMatches]=useState<any[]>([]);const [loading,setLoading]=useState(true);const [leagues,setLeagues]=useState<string[]>([]);
 useEffect(()=>{(async()=>{const s=createClient();void (async()=>{
  const totals=new Map<string,{ratingSum:number;ratingCount:number;ageSum:number;ageCount:number;valueSum:number;valueCount:number}>();
- for(let offset=0;;offset+=1000){
-  const {data,error}=await s.from("scouting_players").select("league,overall,age,estimated_value_eur").eq("is_active",true).not("league","is",null).order("external_id").range(offset,offset+999);
+ for(let offset=0;;offset+=6000){
+  const batches=await Promise.all(Array.from({length:6},(_,i)=>s.from("scouting_players").select("league,overall,age,estimated_value_eur").eq("is_active",true).eq("fifaindex_status","matched").not("league","is",null).order("external_id").range(offset+i*1000,offset+i*1000+999)));
+  for(const {data,error} of batches){
   if(error)throw error;
   for(const p of data||[]){
    const name=String(p.league||"").trim();if(!name)continue;
@@ -18,7 +19,8 @@ useEffect(()=>{(async()=>{const s=createClient();void (async()=>{
    if(p.estimated_value_eur!=null&&Number.isFinite(Number(p.estimated_value_eur))){row.valueSum+=Number(p.estimated_value_eur);row.valueCount++}
    totals.set(name,row);
   }
-  if(!data||data.length<1000)break;
+  }
+  if(batches.some(({data})=>!data||data.length<1000))break;
  }
  const average=(sum:number,count:number)=>count?sum/count:-Infinity;
  setLeagues(Array.from(totals.keys()).sort((a,b)=>{
