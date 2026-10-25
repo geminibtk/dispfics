@@ -4,6 +4,7 @@ import {createClient} from "@supabase/supabase-js";
 export const dynamic="force-dynamic";
 export const maxDuration=60;
 const LEAGUES=[{id:203,name:"Trendyol Süper Lig"},{id:39,name:"Premier League"},{id:140,name:"LALIGA EA SPORTS"},{id:78,name:"Bundesliga"},{id:135,name:"Serie A Enilive"}];
+const SECOND_WAVE=[{id:88,name:"Eredivisie"},{id:61,name:"Ligue 1 McDonald\'s"},{id:94,name:"Liga Portugal"},{id:40,name:"EFL Championship"},{id:79,name:"Bundesliga 2"},{id:136,name:"Serie BKT"},{id:253,name:"MLS"},{id:307,name:"ROSHN Saudi League"},{id:179,name:"Scottish Premiership"},{id:144,name:"1A Pro League"}];
 function normalize(value:string){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").toLowerCase().replace(/[^a-z0-9]/g,"")}
 const ALIASES:Record<number,Record<string,string>>={
  203:{basaksehir:"İstanbul Başakşehir FK",alanyaspor:"Corendon Alanyaspor"},
@@ -37,13 +38,17 @@ export async function GET(req:Request){
  const existing=(catalog||[]).map(x=>({name:String(x.name),league:String(x.league||""),key:normalize(String(x.name))}));
  const {data:priorMatches}=await db.from("api_football_team_matches").select("api_team_id,local_team_name,local_league_name,status").eq("status","matched");
  const confirmedById=new Map((priorMatches||[]).map(x=>[Number(x.api_team_id),x]));
+ const batch=new URL(req.url).searchParams.get("batch");
+ const selected=batch==="second-a"?SECOND_WAVE.slice(0,5):batch==="second-b"?SECOND_WAVE.slice(5):LEAGUES;
  const reports=[];
- for(const league of LEAGUES){
-  const response=await fetch("https://v3.football.api-sports.io/teams?league="+league.id+"&season=2026",{headers:{"x-apisports-key":apiKey},cache:"no-store",signal:AbortSignal.timeout(12000)});
+ for(const league of selected){
+  let response:Response;
+  try{response=await fetch("https://v3.football.api-sports.io/teams?league="+league.id+"&season=2026",{headers:{"x-apisports-key":apiKey},cache:"no-store",signal:AbortSignal.timeout(12000)})}catch(e){reports.push({league:league.name,error:e instanceof Error?e.message:"API timeout"});continue}
   if(!response.ok){reports.push({league:league.name,error:"API HTTP "+response.status});continue}
   const json=await response.json();
   if(json.errors&&(Array.isArray(json.errors)?json.errors.length:Object.keys(json.errors).length)){reports.push({league:league.name,error:"API returned an error",details:json.errors});continue}
   const teams=Array.isArray(json.response)?json.response:[];
+  if(!teams.length){reports.push({league:league.name,error:"2026 sezonu için API takım verisi dönmedi; kayıt değiştirilmedi."});continue}
   let matched=0;let aliasMatches=0;const ambiguous:string[]=[];const unmatched:string[]=[];const examples:{api:string,local:string}[]=[];
   const teamRows:any[]=[];const matchRows:any[]=[];
   for(const entry of teams){
