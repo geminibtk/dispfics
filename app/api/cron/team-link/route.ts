@@ -27,7 +27,8 @@ export async function GET(req:Request){
   if(!p.birthdate||!p.name)continue;
   const {data:existing}=await db.from("football_player_links").select("external_id").eq("external_id",p.external_id).maybeSingle();
   if(existing)continue;
-  const search=String(p.name).trim().split(/\s+/).pop()||"";
+  // API-Football search accepts only ASCII letters, digits and spaces.
+  const search=String(p.name).trim().split(/\s+/).pop()?.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9 ]/g," ").replace(/\s+/g," ").trim()||"";
   if(search.length<4)continue;
   try{
    let profiles=cache.get(search);
