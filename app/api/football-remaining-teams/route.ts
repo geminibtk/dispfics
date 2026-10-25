@@ -32,7 +32,8 @@ export async function GET(req:Request){
  if(!Number.isInteger(batch)||batch<0||batch>=Math.ceil(remaining.length/4))return NextResponse.json({error:"Invalid batch"},{status:400});
  const selected=remaining.slice(batch*4,batch*4+4);
  const reports=[];
- for(const [index,item] of selected.entries()) {
+ for(let index=0;index<selected.length;index++) {
+  const item=selected[index];
   try{
    const search=item.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9 ]/g," ").replace(/\b(FC|FK|SC|TC)\b/gi,"").replace(/\s+/g," ").trim();
    // API-Football search is often substring-based: full EA names may not exist verbatim.
