@@ -26,14 +26,18 @@ export async function GET(req:Request){
   if(json.errors&&(Array.isArray(json.errors)?json.errors.length:Object.keys(json.errors).length)){reports.push({league:league.name,error:"API returned an error",details:json.errors});continue}
   const teams=Array.isArray(json.response)?json.response:[];
   let matched=0;const ambiguous:string[]=[];const unmatched:string[]=[];const examples:{api:string,local:string}[]=[];
+  const teamRows:any[]=[];const matchRows:any[]=[];
   for(const entry of teams){
    const name=String(entry.team?.name||"");const key=normalize(name);
    const candidates=existing.filter(x=>x.key===key);
+   const id=Number(entry.team?.id);
+   if(Number.isSafeInteger(id)&&id>0){teamRows.push({api_team_id:id,name,country:entry.team?.country||null,logo:entry.team?.logo||null,league_id:league.id,season:2025,raw:entry.team});matchRows.push({api_team_id:id,local_team_name:candidates.length===1?candidates[0].name:null,local_league_name:candidates.length===1?candidates[0].league:null,status:candidates.length===1?"matched":candidates.length>1?"ambiguous":"unmatched",candidates:candidates.map(x=>({name:x.name,league:x.league}))})}
    if(candidates.length===1){matched++;if(examples.length<8)examples.push({api:name,local:candidates[0].name})}
    else if(candidates.length>1)ambiguous.push(name);
    else unmatched.push(name);
   }
-  reports.push({league:league.name,apiLeagueId:league.id,season:2025,apiTeams:teams.length,exactNameMatches:matched,ambiguous,unmatched,examples});
+  if(teamRows.length){const {error:teamError}=await db.from("api_football_teams").upsert(teamRows,{onConflict:"api_team_id"});if(teamError){reports.push({league:league.name,error:"Takımlar kaydedilemedi: "+teamError.message});continue}const {error:matchError}=await db.from("api_football_team_matches").upsert(matchRows,{onConflict:"api_team_id"});if(matchError){reports.push({league:league.name,error:"Eşleştirmeler kaydedilemedi: "+matchError.message});continue}}
+  reports.push({league:league.name,apiLeagueId:league.id,season:2025,apiTeams:teams.length,exactNameMatches:matched,ambiguous,unmatched,examples,saved:teamRows.length});
  }
- return NextResponse.json({mode:"read-only",existingTeams:existing.length,report:reports,notice:"Exact normalized names only; no automatic database linking or updates."},{headers:{"Cache-Control":"no-store"}});
+ return NextResponse.json({mode:"api-catalog-persisted",existingTeams:existing.length,report:reports,notice:"API teams and matching candidates saved separately. Existing scouting records untouched."},{headers:{"Cache-Control":"no-store"}});
 }
