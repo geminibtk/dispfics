@@ -6,7 +6,7 @@ export default function TransferCenterContent({teamName}:{teamName?:string}={}){
 async function load(){
  setLoadError("");
  const {data:{user}}=await s.auth.getUser();
- if(!user){setClub("");setAvailableClubs([]);setRows(teamName?getTeamGuestTransfers(teamName):[]);return;}
+ if(!user){setClub("");setAvailableClubs([]);setRows(teamName?getTeamGuestTransfers(teamName):getGuestTransfers());return;}
  const {data:members,error:memberError}=await s.from("club_members").select("club_id").eq("user_id",user.id);
  if(memberError){setLoadError("Kulüp üyelikleri yüklenemedi.");setRows([]);return;}
  const ids=Array.from(new Set((members||[]).map(m=>String(m.club_id))));
@@ -16,14 +16,16 @@ async function load(){
  const options=(clubs||[]).map(c=>({id:String(c.id),name:String(c.name)}));
  setAvailableClubs(options);
  const selected=selectTransferClub(options,teamName,chosenClub);
- if(!selected){setClub("");setRows([]);return;}
+ if(!selected){setClub("");setRows(teamName?getTeamGuestTransfers(teamName):getGuestTransfers());return;}
  setClub(selected);
  const {data,error}=await s.from("transfer_targets").select("*").eq("club_id",selected).order("created_at",{ascending:false});
  if(error){setLoadError("Transfer adayları yüklenemedi.");setRows([]);return;}
- setRows(data||[]);
+ const local=teamName?getTeamGuestTransfers(teamName):getGuestTransfers();
+ const persistedNames=new Set((data||[]).map(x=>String(x.name||"").trim().toLocaleLowerCase("tr-TR")));
+ setRows([...(data||[]),...local.filter(x=>!persistedNames.has(String(x.name||"").trim().toLocaleLowerCase("tr-TR")))]);
 }
 useEffect(()=>{load()},[teamName,chosenClub]);useEffect(()=>{if(!rows.length)return;(async()=>{const names=Array.from(new Set(rows.map(x=>String(x.name||"")).filter(Boolean)));const {data}=await s.from("scouting_players").select("id,name,club,age,estimated_value_eur,avatar_url,position,overall,alternate_positions").in("name",names);const next:Record<string,number>={};const nextValues:Record<string,number>={};const nextInfo:Record<string,{id:string;avatar?:string;position?:string;overall?:number;alternate_positions?:unknown}>={};for(const x of rows){const match=uniqueScoutingMatch({name:String(x.name),current_club:x.current_club||null},data||[]);if(match?.id!=null)nextInfo[x.id]={id:String(match.id),avatar:match.avatar_url,position:match.position,overall:match.overall,alternate_positions:match.alternate_positions};if(match?.age!=null)next[x.id]=match.age;if(match?.estimated_value_eur!=null)nextValues[x.id]=Number(match.estimated_value_eur)}setAges(next);setValues(nextValues);setScoutInfo(nextInfo)})()},[rows]);
-async function status(id:string,v:string){if(id.startsWith("guest-")){saveGuestTransfers(getGuestTransfers().map(x=>x.id===id?{...x,status:v}:x));setRows(teamName?getTeamGuestTransfers(teamName):[]);return;}if(!club)return;try{await updateTransferStatus(s,club,id,v);await load()}catch{setLoadError("Transfer durumu güncellenemedi.")}}async function del(id:string){if(id.startsWith("guest-")){saveGuestTransfers(getGuestTransfers().filter(x=>x.id!==id));setRows(teamName?getTeamGuestTransfers(teamName):[]);return;}if(!club)return;try{await deleteTransferTarget(s,club,id);await load()}catch{setLoadError("Transfer adayı silinemedi.")}}
+async function status(id:string,v:string){if(id.startsWith("guest-")){saveGuestTransfers(getGuestTransfers().map(x=>x.id===id?{...x,status:v}:x));await load();return;}if(!club)return;try{await updateTransferStatus(s,club,id,v);await load()}catch{setLoadError("Transfer durumu güncellenemedi.")}}async function del(id:string){if(id.startsWith("guest-")){saveGuestTransfers(getGuestTransfers().filter(x=>x.id!==id));setRows(teamName?getTeamGuestTransfers(teamName):[]);return;}if(!club)return;try{await deleteTransferTarget(s,club,id);await load()}catch{setLoadError("Transfer adayı silinemedi.")}}
 const filtered=useMemo(()=>{
  const playable=(x:any)=>playerPlayablePositions(scoutInfo[x.id]?.position||x.position,scoutInfo[x.id]?.alternate_positions);
  return rows.filter(x=>(!q||x.name.toLowerCase().includes(q.toLowerCase())||String(x.current_club||"").toLowerCase().includes(q.toLowerCase()))&&(!pos||x.position===pos)).sort((a,b)=>{
