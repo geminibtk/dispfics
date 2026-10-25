@@ -5,22 +5,8 @@ const pending=new Map<string,Promise<string>>();
 async function findFlag(name:string):Promise<string>{
  if(cache.has(name))return cache.get(name)||"";
  if(pending.has(name))return pending.get(name)!;
- const task=(async()=>{try{
-  const search=new URL("https://www.wikidata.org/w/api.php");
-  Object.entries({action:"wbsearchentities",search:name,language:"tr",format:"json",origin:"*",limit:"10"}).forEach(([k,v])=>search.searchParams.set(k,v));
-  const r=await fetch(search);if(!r.ok)return "";const items=(await r.json()).search||[];
-  const key=name.toLocaleLowerCase("tr-TR");
-  const item=items.find((x:any)=>x.label?.toLocaleLowerCase("tr-TR")===key&&/ülke|devlet|cumhuriyet|country|sovereign/i.test(x.description||""))
-   ||items.find((x:any)=>/ülke|devlet|cumhuriyet|country|sovereign/i.test(x.description||""));
-  if(!item)return "";
-  const url=new URL("https://www.wikidata.org/w/api.php");
-  Object.entries({action:"wbgetentities",ids:item.id,props:"claims",format:"json",origin:"*"}).forEach(([k,v])=>url.searchParams.set(k,v));
-  const detail=await fetch(url);if(!detail.ok)return "";
-  const claims=(await detail.json()).entities?.[item.id]?.claims;
-  const file=claims?.P41?.find((x:any)=>typeof x.mainsnak?.datavalue?.value==="string")?.mainsnak?.datavalue?.value;
-  return file?"https://commons.wikimedia.org/wiki/Special:FilePath/"+encodeURIComponent(file)+"?width=96":"";
- }catch{return ""}})();
- pending.set(name,task);const result=await task;pending.delete(name);cache.set(name,result);return result;
+ const task=(async()=>{try{const {createClient}=await import("../../lib/supabase");const {data,error}=await createClient().from("country_flag_catalog").select("image_url").eq("name",name).maybeSingle();if(error)return "";return String(data?.image_url||"")}catch{return ""}})();
+ pending.set(name,task);const result=await task;pending.delete(name);if(result)cache.set(name,result);return result;
 }
 export default function CountryFlag({name}:{name:string}){
  const [src,setSrc]=useState(()=>cache.get(name)||"");
