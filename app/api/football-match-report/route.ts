@@ -35,6 +35,8 @@ export async function GET(req:Request){
  const {data:catalog,error:catalogError}=await db.from("team_catalog_summary").select("name,league").limit(1000);
  if(catalogError)return NextResponse.json({error:"Team catalog unavailable"},{status:502});
  const existing=(catalog||[]).map(x=>({name:String(x.name),league:String(x.league||""),key:normalize(String(x.name))}));
+ const {data:priorMatches}=await db.from("api_football_team_matches").select("api_team_id,local_team_name,local_league_name,status").eq("status","matched");
+ const confirmedById=new Map((priorMatches||[]).map(x=>[Number(x.api_team_id),x]));
  const reports=[];
  for(const league of LEAGUES){
   const response=await fetch("https://v3.football.api-sports.io/teams?league="+league.id+"&season=2026",{headers:{"x-apisports-key":apiKey},cache:"no-store",signal:AbortSignal.timeout(12000)});
@@ -46,10 +48,14 @@ export async function GET(req:Request){
   const teamRows:any[]=[];const matchRows:any[]=[];
   for(const entry of teams){
    const name=String(entry.team?.name||"");
-   const {candidates,method}=candidatesFor(name,league,existing);
-   const confirmed=(method==="exact"||method==="alias")&&candidates.length===1;
-   if(confirmed&&method==="alias")aliasMatches++;
    const id=Number(entry.team?.id);
+   const prior=confirmedById.get(id);
+   const verifiedPrior=prior&&existing.some(x=>x.name===prior.local_team_name&&x.league===league.name&&x.league===prior.local_league_name);
+   const inferred=candidatesFor(name,league,existing);
+   const candidates=verifiedPrior?[{name:prior!.local_team_name!,league:prior!.local_league_name!,key:normalize(prior!.local_team_name!)}]:inferred.candidates;
+   const method=verifiedPrior?"verified":inferred.method;
+   const confirmed=(method==="verified"||method==="exact"||method==="alias")&&candidates.length===1;
+   if(confirmed&&method==="alias")aliasMatches++;
    if(Number.isSafeInteger(id)&&id>0){teamRows.push({api_team_id:id,name,country:entry.team?.country||null,logo:entry.team?.logo||null,league_id:league.id,season:2026,raw:entry.team});matchRows.push({api_team_id:id,local_team_name:confirmed?candidates[0].name:null,local_league_name:confirmed?candidates[0].league:null,status:confirmed?"matched":candidates.length?"ambiguous":"unmatched",candidates:candidates.map(x=>({name:x.name,league:x.league}))})}
    if(confirmed){matched++;if(examples.length<8)examples.push({api:name,local:candidates[0].name})}
    else if(candidates.length)ambiguous.push(name);
