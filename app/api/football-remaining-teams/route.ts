@@ -128,16 +128,16 @@ export async function GET(req:Request){
       }
      }catch(e){diagnostics.push("Şili takım dizini: "+(e instanceof Error?e.message:"Bilinmeyen hata"));}
     }
-    // Cross-check known Audax squad members against API-Football player season records.
+    // Cross-check known Audax squad members across all leagues for the 2025 season.
     // Player-team links are evidence only; they never automatically create a mapping.
     if(!chileCandidates.length&&!extra.length){
      const names=["Rodrigo Cabral","Federico Mateos","Diego Coelho","Nicolás Orellana","Tomás Ahumada"];
      const playerTeams=new Map<number,{name:string;players:Set<string>;seasons:Set<number>}>();
-     for(const season of [2026,2025]){
+     for(const season of [2025]){
       for(const playerName of names){
        try{
         const surname=playerName.split(" ").at(-1)||playerName;
-        const endpoint="https://v3.football.api-sports.io/players?search="+encodeURIComponent(surname)+"&league=11&season="+season;
+        const endpoint="https://v3.football.api-sports.io/players?search="+encodeURIComponent(surname)+"&season="+season;
         const pr=await fetch(endpoint,{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(10000)});
         if(!pr.ok){diagnostics.push("Oyuncu "+playerName+" "+season+": HTTP "+pr.status);continue;}
         const pj=await pr.json();
@@ -158,7 +158,7 @@ export async function GET(req:Request){
      }
      const ranked=Array.from(playerTeams.entries()).sort((a,b)=>b[1].players.size-a[1].players.size);
      for(const [id,team] of ranked.slice(0,10))diagnostics.push("Oyuncu kanıtı: "+team.name+" (#"+id+"), "+team.players.size+" oyuncu ["+Array.from(team.players).join(", ")+"], sezonlar "+Array.from(team.seasons).join(", ")+".");
-     if(!ranked.length)diagnostics.push("Oyuncu sorgularında Sudamericana 2025/2026 için takım kanıtı bulunamadı.");
+     if(!ranked.length)diagnostics.push("Lig kısıtlaması olmadan 2025 oyuncu sorgularında takım kanıtı bulunamadı.");
     }
     json.response=[...chileCandidates,...extra];
     if(!json.response.length)diagnostics.push("Şili takım listelerinde de Audax bulunamadı.");
