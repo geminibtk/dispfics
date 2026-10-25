@@ -8,9 +8,9 @@ export default function FootballImportPage(){
  const [result,setResult]=useState<any>(null);
  const [error,setError]=useState("");
  const [footballData,setFootballData]=useState<any>(null);
- async function importMatches(){
+ async function importMatches(batch=""){
   setLoading(true);setError("");
-  try{const {data:{session}}=await createClient().auth.getSession();if(!session)throw new Error("Önce giriş yapmalısın.");const response=await fetch("/api/football-data-import",{headers:{Authorization:"Bearer "+session.access_token}});const json=await response.json();if(!response.ok)throw new Error(json.error||"Aktarım başarısız");setFootballData(json)}catch(e){setError(e instanceof Error?e.message:"Bilinmeyen hata")}finally{setLoading(false)}
+  try{const {data:{session}}=await createClient().auth.getSession();if(!session)throw new Error("Önce giriş yapmalısın.");const response=await fetch("/api/football-data-import"+(batch?"?batch="+batch:""),{headers:{Authorization:"Bearer "+session.access_token}});const json=await response.json();if(!response.ok)throw new Error(json.error||"Aktarım başarısız");setFootballData(json)}catch(e){setError(e instanceof Error?e.message:"Bilinmeyen hata")}finally{setLoading(false)}
  }
  async function run(batch=""){
   setLoading(true);setError("");setResult(null);
@@ -32,6 +32,7 @@ export default function FootballImportPage(){
    <div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:12}}><button className="playerBack" type="button" disabled={loading} onClick={()=>run("second-a")}>2. Pilot: İlk 5 lig</button><button className="playerBack" type="button" disabled={loading} onClick={()=>run("second-b")}>2. Pilot: Son 5 lig</button></div>
    <p style={{fontSize:13,opacity:.8}}>İkinci pilot: Eredivisie, Ligue 1, Liga Portugal, Championship, Bundesliga 2, Serie B, MLS, Suudi Arabistan, İskoçya ve Belçika. Eşleşmeyen API takımları scouting profiline yönlendirilmez.</p>
    <button className="playerBack" type="button" disabled={loading} onClick={importMatches} style={{marginLeft:12}}>{loading?"Veriler alınıyor…":"Fikstür ve puan durumunu aktar"}</button>
+   <div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:12}}><button className="playerBack" type="button" disabled={loading} onClick={()=>importMatches("second-a")}>İlk 5 yeni lig: Fikstür ve puan durumu</button><button className="playerBack" type="button" disabled={loading} onClick={()=>importMatches("second-b")}>Son 5 yeni lig: Fikstür ve puan durumu</button></div>
    {footballData&&<div><h3>Fikstür ve Puan Durumu Aktarımı</h3>{footballData.results?.map((r:any)=><p key={r.league}>Lig {r.league}: {r.fixtures} maç, {r.standings} puan durumu kaydı {r.fixturesError||r.standingsError?"· Hata: "+[r.fixturesError,r.standingsError].filter(Boolean).join(", "):""}</p>)}</div>}
    {error&&<p role="alert" style={{color:"#ffaaa5"}}>{error}</p>}
   </section>
