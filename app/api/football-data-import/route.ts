@@ -21,16 +21,16 @@ export async function GET(req:Request){
   const ids=[203,39,140,78,135,88,61,94,40,79,136,253,307,179,144];
   const audits:any[]=[];
   for(const league of ids){
-   const [{data:teams,error:teamError},{data:fixtures,error:fixtureError},{data:standings,error:standingError}]=await Promise.all([
+   const [{data:teams,error:teamError},{count:fixtureCount,error:fixtureError},{count:standingCount,error:standingError}]=await Promise.all([
     db.from("api_football_teams").select("api_team_id").eq("league_id",league).eq("season",2026),
-    db.from("api_football_fixtures").select("fixture_id").eq("league_id",league).eq("season",2026),
-    db.from("api_football_standings").select("team_id").eq("league_id",league).eq("season",2026)
+    db.from("api_football_fixtures").select("*",{count:"exact",head:true}).eq("league_id",league).eq("season",2026),
+    db.from("api_football_standings").select("*",{count:"exact",head:true}).eq("league_id",league).eq("season",2026)
    ]);
    if(teamError||fixtureError||standingError){audits.push({league,error:[teamError?.message,fixtureError?.message,standingError?.message].filter(Boolean).join("; ")});continue}
    const teamIds=(teams||[]).map(x=>x.api_team_id);
    let matched=0;
    if(teamIds.length){const {data:matches,error:matchError}=await db.from("api_football_team_matches").select("api_team_id").in("api_team_id",teamIds).eq("status","matched");if(matchError){audits.push({league,error:matchError.message});continue}matched=matches?.length||0}
-   audits.push({league,teams:teamIds.length,matched,unresolved:teamIds.length-matched,fixtures:fixtures?.length||0,standings:standings?.length||0});
+   audits.push({league,teams:teamIds.length,matched,unresolved:teamIds.length-matched,fixtures:fixtureCount??0,standings:standingCount??0});
   }
   return NextResponse.json({season:2026,audits},{headers:{"Cache-Control":"no-store"}});
  }
