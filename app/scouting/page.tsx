@@ -29,6 +29,8 @@ function savedScoutFilters():Partial<ScoutFilters>{
 function sameClub(a:string,b:string){return !!a&&!!b&&a.trim().toLocaleLowerCase("tr-TR")===b.trim().toLocaleLowerCase("tr-TR")}
 export default function Scouting(){
  const s=createClient(),router=useRouter();
+ const [canSync,setCanSync]=useState(false);
+ useEffect(()=>{let active=true;s.auth.getUser().then(({data:{user}})=>{if(active)setCanSync(user?.email?.toLowerCase()==="gemini.btk@gmail.com")}).catch(()=>{});return ()=>{active=false}},[]);
  const [selectedClub]=useState(()=>{try{return String(JSON.parse(sessionStorage.getItem("yf-selected-team")||"{}").team||"")}catch{return ""}});
  const [saved]=useState(savedScoutFilters);
  const [rows,setRows]=useState<Row[]>([]),[q,setQ]=useState(saved.q||""),[pos,setPos]=useState(saved.pos||""),[min,setMin]=useState(saved.min||""),[msg,setMsg]=useState(""),[offset,setOffset]=useState(saved.offset||0),[loading,setLoading]=useState(true),[allCountries,setAllCountries]=useState<string[]>([]),[allLeagues,setAllLeagues]=useState<string[]>([]),[allPositions,setAllPositions]=useState<string[]>([]),[resultTotal,setResultTotal]=useState(TOTAL) , [league,setLeague]=useState(saved.league||""),[country,setCountry]=useState(saved.country||""),[sort,setSort]=useState(saved.sort||"overall"),[maxOverall,setMaxOverall]=useState(saved.maxOverall||""),[minAge,setMinAge]=useState(saved.minAge||""),[maxAge,setMaxAge]=useState(saved.maxAge||""),[minValue,setMinValue]=useState(saved.minValue||""),[maxValue,setMaxValue]=useState(saved.maxValue||""),[sortDirection,setSortDirection]=useState(saved.sortDirection||"desc");
@@ -109,7 +111,7 @@ export default function Scouting(){
  }
 
  return <AppShell title="Oyuncu Keşfi"><div>
-  <div className="scoutFilters"><input placeholder="Oyuncu, takım veya ülke ara" value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")load(0,q.trim())}} style={input}/><button onClick={()=>load(0,q.trim())} disabled={loading} style={button}>Ara</button><button onClick={syncEA} disabled={loading} style={navButton}>{loading?"İşleniyor…":"YanımdaFutbol Verilerini Senkronize Et"}</button></div>
+  <div className="scoutFilters"><input placeholder="Oyuncu, takım veya ülke ara" value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")load(0,q.trim())}} style={input}/><button onClick={()=>load(0,q.trim())} disabled={loading} style={button}>Ara</button>{canSync&&<button onClick={syncEA} disabled={loading} style={navButton}>{loading?"İşleniyor…":"YanımdaFutbol Verilerini Senkronize Et"}</button>}</div>
   <details className="scoutAdvanced"><summary>Filtrele ve Sırala</summary><div className="scoutAdvancedGrid scoutFilterLayout" style={{display:"grid",gridTemplateColumns:"repeat(6,minmax(0,1fr))",gap:12}}>
    <label style={{gridColumn:"1 / -1"}}><div style={{whiteSpace:"nowrap"}}>YF Reyting</div><span style={{display:"flex",gap:6}}><input type="number" min="1" max="100" placeholder="Min" value={min} onChange={e=>setMin(e.target.value)} style={input}/><input type="number" min="1" max="100" placeholder="Max" value={maxOverall} onChange={e=>setMaxOverall(e.target.value)} style={input}/></span></label>
    
