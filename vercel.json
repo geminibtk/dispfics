@@ -1,8 +1,12 @@
 {
   "crons": [
     {
-      "path": "/api/cron/football-reference-batch",
-      "schedule": "15 4 * * *"
+      "path": "/api/cron/team-link",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/team-sync",
+      "schedule": "0 3 * * *"
     }
   ]
 }
