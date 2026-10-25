@@ -49,7 +49,7 @@ export async function GET(req:Request){
      if(page>=Number(body.paging?.total||1))break;
      if(page===3)complete=false;
     }
-    if(!complete){if(rateLimited || apiErrors)break;ambiguous++;continue}
+    if(!complete){if(rateLimited || apiErrors){processed--;break;}ambiguous++;continue}
     cache.set(search,profiles);
    }
    checked++;
