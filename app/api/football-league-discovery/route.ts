@@ -75,7 +75,7 @@ async function handle(req:Request){
      const exactMatches=locals.filter(n=>norm(n)===norm(t.name));
      const aliasName=TEAM_ALIASES[item.league]?.[norm(t.name)];
      const matches=exactMatches.length?exactMatches:aliasName?locals.filter(n=>n===aliasName):[];
-     const matched=matches.length===1&&!used.has(matches[0]);
+     const matched=matches.length===1&&!used.has(matches[0])&&apiTeams.filter((other:any)=>other.id!==t.id&&(norm(other.name)===norm(matches[0])||TEAM_ALIASES[item.league]?.[norm(other.name)]===matches[0])).length===0;
      if(matched)used.add(matches[0]);
      return {apiId:t.id,apiName:t.name,localName:matched?matches[0]:null,status:matched?(exactMatches.length?"exact":"alias"):"review"};
     });
@@ -94,7 +94,9 @@ async function handle(req:Request){
       if(teamError)throw new Error(teamError.message);
       const {error:matchError}=await db.from("api_football_team_matches").upsert(matchRows,{onConflict:"api_team_id"});
       if(matchError)throw new Error(matchError.message);
-      saved=matchRows.length;
+      const {data:verified,error:verifyError}=await db.from("api_football_team_matches").select("api_team_id,local_team_name,local_league_name,status").in("api_team_id",matchRows.map((x:any)=>x.api_team_id));
+      if(verifyError)throw new Error("Verification failed: "+verifyError.message);
+      saved=matchRows.filter((x:any)=>(verified||[]).some((v:any)=>Number(v.api_team_id)===x.api_team_id&&v.local_team_name===x.local_team_name&&v.local_league_name===x.local_league_name&&v.status==="matched")).length;
      }
     }
     reports.push({league:item.league,apiLeagueId:candidate.id,apiTeams:apiTeams.length,localTeams:locals.length,exact:comparisons.filter((x:any)=>x.status==="exact").length,alias:comparisons.filter((x:any)=>x.status==="alias").length,review:comparisons.filter((x:any)=>x.status==="review").length,saved,comparisons});
