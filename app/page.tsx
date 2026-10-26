@@ -1,10 +1,9 @@
 "use client";
-import Link from "next/link";
 import {displayRating} from "../lib/display-rating";
 import {useEffect,useState} from "react";import {useRouter} from "next/navigation";
 import {LayoutDashboard,Users,Search,BrainCircuit,BarChart3,Settings,Shield,TrendingUp,Activity,ArrowUpRight,Landmark} from "lucide-react";import {createClient} from "../lib/supabase";import AppShell from "./components/AppShell";
 const nav=[["Genel Bakış",LayoutDashboard],["Takımlar",Landmark],["Oyuncu Keşfi",Search],["Oyuncular",Activity],["Transfer Merkezi",Search],["AI Teknik Asistan",BrainCircuit],["Analiz",BarChart3]];
-export default function Home(){const router=useRouter();return <AppShell title="Genel Bakış"><><div style={{padding:"12px 24px",background:"#0d2927",borderBottom:"1px solid #256c60"}}><Link href="/futbol" style={{color:"#7cf2c5",fontWeight:800,textDecoration:"none"}}>⚽ Futbol Merkezi — Maçlar, Ligler ve Takımlar →</Link></div><Dashboard router={router}/></></AppShell>}
+export default function Home(){const router=useRouter();return <AppShell title="Genel Bakış"><Dashboard router={router}/></AppShell>}
 function Dashboard({router}:any){const [club,setClub]=useState<any>(null);const [players,setPlayers]=useState<any[]>([]);const [metrics,setMetrics]=useState<any[]>([]);const [matches,setMatches]=useState<any[]>([]);const [loading,setLoading]=useState(true);const [leagues,setLeagues]=useState<string[]>([]);
 useEffect(()=>{(async()=>{const s=createClient();void (async()=>{
  const {data,error}=await s.from("league_catalog_summary").select("name,rating,averageAge,averageValue").limit(1000);
