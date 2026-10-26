@@ -10,8 +10,8 @@ export default async function MatchPage({params}:{params:Promise<{id:string}>}){
  const {id}=await params;const fixtureId=Number(id);if(!Number.isSafeInteger(fixtureId)||fixtureId<=0)notFound();
  const db=footballDb();
  const {data:stored}=await db.from("api_football_fixtures").select("*").eq("fixture_id",fixtureId).maybeSingle();
- let f:any=stored;let current=false;let apiError=false;
- let events:any[]=[],statistics:any[]=[],lineups:any[]=[];
+ let f:any=stored;let current=false;
+ let events:any[]=[],statistics:any[]=[],lineups:any[]=[],playerStats:any[]=[];
  if(process.env.API_FOOTBALL_KEY){
   try{
    const res=await fetch("https://v3.football.api-sports.io/fixtures?id="+fixtureId,{headers:{"x-apisports-key":process.env.API_FOOTBALL_KEY},next:{revalidate:60},signal:AbortSignal.timeout(9000)});
@@ -21,14 +21,23 @@ export default async function MatchPage({params}:{params:Promise<{id:string}>}){
    if(x){
     f={fixture_id:x.fixture.id,league_id:x.league.id,season:x.league.season,kickoff:x.fixture.date,status:x.fixture.status.short,home_team_id:x.teams.home.id,away_team_id:x.teams.away.id,home_goals:x.goals.home,away_goals:x.goals.away,raw:x};
     current=true;events=x.events||[];statistics=x.statistics||[];lineups=x.lineups||[];
-   }else apiError=true;
-  }catch{apiError=true}
+   }
+  }catch{}
  }else apiError=true;
+ if(current&&process.env.API_FOOTBALL_KEY){
+  try{const res=await fetch("https://v3.football.api-sports.io/fixtures/players?fixture="+fixtureId,{headers:{"x-apisports-key":process.env.API_FOOTBALL_KEY},next:{revalidate:120},signal:AbortSignal.timeout(8500)});const json=await res.json();if(res.ok&&!Object.keys(json.errors||{}).length)playerStats=json.response||[]}catch{}
+ }
  if(!f)notFound();
  const home=f.raw?.teams?.home,away=f.raw?.teams?.away;
  const logo=(team:any,id:number)=>team?.logo||"https://media.api-sports.io/football/teams/"+id+".png";
  const display=(v:any)=>v===null||v===undefined?"–":String(v);
  const score=f.raw?.score||{};
+ const eventNames:Record<string,string>={Goal:"Gol",Card:"Kart",subst:"Oyuncu değişikliği",Var:"VAR kararı"};
+ const detailNames:Record<string,string>={"Yellow Card":"Sarı kart","Red Card":"Kırmızı kart","Normal Goal":"Gol","Own Goal":"Kendi kalesine gol","Penalty":"Penaltı golü","Missed Penalty":"Kaçan penaltı","Substitution 1":"Oyuncu değişikliği","Substitution 2":"Oyuncu değişikliği","Substitution 3":"Oyuncu değişikliği","Substitution 4":"Oyuncu değişikliği","Substitution 5":"Oyuncu değişikliği"};
+ const statNames:Record<string,string>={"Shots on Goal":"İsabetli şut","Shots off Goal":"İsabetsiz şut","Total Shots":"Toplam şut","Blocked Shots":"Engellenen şut","Shots insidebox":"Ceza sahası içinden şut","Shots outsidebox":"Ceza sahası dışından şut","Fouls":"Fauller","Corner Kicks":"Kornerler","Offsides":"Ofsaytlar","Ball Possession":"Topa sahip olma","Yellow Cards":"Sarı kartlar","Red Cards":"Kırmızı kartlar","Goalkeeper Saves":"Kaleci kurtarışları","Total passes":"Toplam pas","Passes accurate":"İsabetli pas","Passes %":"Pas isabet oranı","expected_goals":"Beklenen gol (xG)","goals_prevented":"Engellenen gol"};
+ const ratingFor=(teamId:number,playerId:number)=>{const team=playerStats.find((t:any)=>t.team?.id===teamId);const player=team?.players?.find((p:any)=>p.player?.id===playerId);const raw=player?.statistics?.[0]?.games?.rating;const n=Number(raw);return Number.isFinite(n)&&n>0?n.toFixed(1):null};
+ const pitchRows=(team:any)=>{const players=team.startXI||[];const grouped=new Map<number,any[]>();for(const item of players){const row=Number(String(item.player?.grid||"").split(":")[0]);const key=Number.isFinite(row)&&row>0?row:99;if(!grouped.has(key))grouped.set(key,[]);grouped.get(key)!.push(item)}return Array.from(grouped.entries()).sort((a,b)=>a[0]-b[0]).map(x=>x[1])};
+
  return <AppShell title="Maç Detayı" hideTitle><div className={styles.root}>
  <Link className={styles.back} href="/futbol">← Futbol Merkezi</Link>
  <header className={styles.header}><span className={styles.kicker}>{leagueName(f.league_id)} · {f.season||new Date(f.kickoff).getUTCFullYear()}</span><h1>Maç <em>Detayı</em></h1><p>{dateLabel(f.kickoff)} · {f.raw?.fixture?.venue?.name||"Stadyum bilgisi yok"}</p></header>
@@ -44,9 +53,9 @@ export default async function MatchPage({params}:{params:Promise<{id:string}>}){
  <div className={styles.match}>Devre: {display(score.halftime?.home)} : {display(score.halftime?.away)}</div>
  <div className={styles.match}>Durum: {statusTR[f.status]||f.raw?.fixture?.status?.long||f.status}</div>
  </div>
- {events.length>0&&<><div className={styles.sectionHead}><h2>Maç olayları</h2></div><div className={styles.panel} style={{marginBottom:18}}>{events.map((e:any,i:number)=><div className={styles.match} key={i}><strong>{e.time?.elapsed}′{e.time?.extra?" +"+e.time.extra:""}</strong> · {e.team?.name} · {e.player?.name||"Oyuncu"} — {e.type}{e.detail?" · "+e.detail:""}</div>)}</div></>}
- {statistics.length>0&&<><div className={styles.sectionHead}><h2>Maç istatistikleri</h2></div><div className={styles.panel} style={{marginBottom:18}}>{Array.from(new Set(statistics.flatMap((t:any)=>t.statistics?.map((s:any)=>s.type)||[]))).map((type:any)=><div key={String(type)} className={styles.match} style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr",gap:12,textAlign:"center"}}><strong>{display(statistics[0]?.statistics?.find((s:any)=>s.type===type)?.value)}</strong><span>{String(type)}</span><strong>{display(statistics[1]?.statistics?.find((s:any)=>s.type===type)?.value)}</strong></div>)}</div></>}
- {lineups.length>0&&<><div className={styles.sectionHead}><h2>İlk 11 ve dizilişler</h2></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:14}}>{lineups.map((t:any)=><div key={t.team?.id} className={styles.panel} style={{padding:18}}><strong>{t.team?.name} · {t.formation||"Diziliş açıklanmadı"}</strong>{(t.startXI||[]).map((p:any)=><div key={p.player?.id} style={{padding:"7px 0",borderBottom:"1px solid #223a29",fontSize:13}}>{p.player?.number||"–"} · {p.player?.name}</div>)}</div>)}</div></>}
+ {events.length>0&&<><div className={styles.sectionHead}><h2>Maç olayları</h2></div><div className={styles.panel} style={{marginBottom:18}}>{events.map((e:any,i:number)=><div className={styles.match} key={i}><strong>{e.time?.elapsed}′{e.time?.extra?" +"+e.time.extra:""}</strong> · {e.team?.name} · {e.player?.name||"Oyuncu"} — {eventNames[e.type]||"Maç olayı"}{e.detail?" · "+(detailNames[e.detail]|| (e.type==="subst"?"Oyuncu değişikliği":"Diğer")):""}</div>)}</div></>}
+ {statistics.length>0&&<><div className={styles.sectionHead}><h2>Maç istatistikleri</h2></div><div className={styles.panel} style={{marginBottom:18}}>{Array.from(new Set(statistics.flatMap((t:any)=>t.statistics?.map((s:any)=>s.type)||[]))).map((type:any)=><div key={String(type)} className={styles.match} style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr",gap:12,textAlign:"center"}}><strong>{display(statistics[0]?.statistics?.find((s:any)=>s.type===type)?.value)}</strong><span>{statNames[String(type)]||"Diğer istatistik"}</span><strong>{display(statistics[1]?.statistics?.find((s:any)=>s.type===type)?.value)}</strong></div>)}</div></>}
+ {lineups.length>0&&<><div className={styles.sectionHead}><h2>İlk 11 ve dizilişler</h2></div><div className={styles.pitchGrid}>{lineups.map((team:any)=><div key={team.team?.id} className={styles.pitchCard}><div className={styles.pitchHeading}><img src={logo(team.team,team.team?.id)} width="30" height="30" alt=""/><strong>{team.team?.name}</strong><span>{team.formation||"Diziliş açıklanmadı"}</span></div><div className={styles.pitch}>{pitchRows(team).map((row:any[],i:number)=><div key={i} className={styles.pitchRow}>{row.map((item:any)=><div key={item.player?.id} className={styles.pitchPlayer}><div className={styles.pitchNumber}>{item.player?.number||"–"}</div><span>{item.player?.name||"Oyuncu"}</span>{ratingFor(team.team?.id,item.player?.id)&&<b className={styles.playerRating}>{ratingFor(team.team?.id,item.player?.id)}</b>}</div>)}</div>)}</div></div>)}</div>{playerStats.length===0&&<p style={{color:"#93ae9b",fontSize:12,marginTop:10}}>Oyuncu maç puanları henüz sağlanmadı.</p>}</>}
  {current&&!events.length&&!statistics.length&&!lineups.length&&<p style={{color:"#92aa99",fontSize:13,marginTop:18}}>{FINISHED.includes(f.status)?"API-Football bu karşılaşma için ayrıntılı olay, istatistik veya kadro verisi döndürmedi.":"Maç olayları, istatistikler ve kadrolar API-Football tarafından sağlandığında burada gösterilecek."}</p>}
  </div></AppShell>;
 }
