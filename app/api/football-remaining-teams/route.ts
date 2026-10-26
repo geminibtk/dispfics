@@ -131,7 +131,7 @@ export async function GET(req:Request){
     // Cross-check Audax players in Chile Primera División, with required league filter.
     // Player-team links are evidence only; they never automatically create a mapping.
     if(!chileCandidates.length&&!extra.length){
-     const names=["Rodrigo Cabral","Federico Mateos","Diego Coelho","Nicolás Orellana","Tomás Ahumada"];
+     const names=["Bryan Soto","Cristóbal Muñoz","Diego Coelho","Diego Monreal","Enzo Ferrario","Favian Loyola","Federico Mateos","Franco Troyansky","Giovani Chiaverano","Marcelo Ortíz","Marco Collao","Mario Sandoval","Martín Jiménez","Michael Vadulli","Nicolás Aedo","Nicolás Orellana","Oliver Rojas","Paolo Guajardo","Pedro Garrido","Raimundo Rebolledo","Rodrigo Cabral","Tomás Ahumada","Tomás Cayuqueo","Tomás Leyton","Vicente Zenteno"];
      const playerTeams=new Map<number,{name:string;players:Set<string>;seasons:Set<number>}>();
      for(const season of [2025,2026]){
       for(const playerName of names){
