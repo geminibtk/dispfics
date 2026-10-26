@@ -12,6 +12,20 @@ export default function FootballImportPage(){
  const [discovery,setDiscovery]=useState<any>(null);
  const [teamComparison,setTeamComparison]=useState<any>(null);
  const [remainingReport,setRemainingReport]=useState<any>(null);
+ const [teamImport,setTeamImport]=useState<any>(null);
+ const [teamImportPage,setTeamImportPage]=useState(0);
+ async function importTeamData(){
+  setLoading(true);setError("");
+  try{
+   const {data:{session}}=await createClient().auth.getSession();
+   if(!session)throw new Error("Önce yetkili hesabınla giriş yapmalısın.");
+   const response=await fetch("/api/football-team-data-import?page="+teamImportPage,{headers:{Authorization:"Bearer "+session.access_token},cache:"no-store"});
+   const json=await response.json();
+   if(!response.ok)throw new Error(json.error||"Takım verileri alınamadı");
+   setTeamImport(json);
+   if(json.nextPage!==null)setTeamImportPage(json.nextPage);
+  }catch(e){setError(e instanceof Error?e.message:"Bilinmeyen hata")}finally{setLoading(false)}
+ }
  async function scanRemaining(batch:number){
   setLoading(true);setError("");
   try{const {data:{session}}=await createClient().auth.getSession();if(!session)throw new Error("Önce giriş yapmalısın.");const response=await fetch("/api/football-remaining-teams?batch="+batch,{headers:{Authorization:"Bearer "+session.access_token},cache:"no-store"});const json=await response.json();if(!response.ok)throw new Error(json.error||"Kalan takım taraması başarısız");setRemainingReport(json)}catch(e){setError(e instanceof Error?e.message:"Bilinmeyen hata")}finally{setLoading(false)}
@@ -69,6 +83,13 @@ export default function FootballImportPage(){
    <p style={{fontSize:13,opacity:.8}}>İkinci pilot: Eredivisie, Ligue 1, Liga Portugal, Championship, Bundesliga 2, Serie B, MLS, Suudi Arabistan, İskoçya ve Belçika. Eşleşmeyen API takımları scouting profiline yönlendirilmez.</p>
    <button className="playerBack" type="button" disabled={loading} onClick={()=>importMatches()} style={{marginLeft:12}}>{loading?"Veriler alınıyor…":"Fikstür ve puan durumunu aktar"}</button>
    <div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:12}}><button className="playerBack" type="button" disabled={loading} onClick={()=>importMatches("second-a")}>İlk 5 yeni lig: Fikstür ve puan durumu</button><button className="playerBack" type="button" disabled={loading} onClick={()=>importMatches("second-b")}>Son 5 yeni lig: Fikstür ve puan durumu</button></div>
+   <div style={{marginTop:16,padding:14,border:"1px solid #7775",borderRadius:8}}>
+    <strong>Eşleşmiş takımların API verilerini aktar</strong>
+    <p>Yalnızca eşleşmiş takımlar: takım bilgisi, kadro ve mevcut sezon takım istatistikleri. Scouting oyuncu verileri değişmez. Her tıklamada 10 takım işlenir.</p>
+    <button className="playerBack" type="button" disabled={loading} onClick={()=>importTeamData()}>{loading?"Veriler alınıyor…":"Sonraki 10 takımın verilerini getir"}</button>
+    {teamImport&&<p>İşlenen sayfa: {teamImport.page+1} · Takım: {teamImport.processed} · Sonraki sayfa: {teamImport.nextPage===null?"Bitti":teamImport.nextPage+1} · Hata: {teamImport.results.reduce((n:number,r:any)=>n+r.errors.length,0)}</p>}
+    {teamImport&&<details><summary>Takım bazında sonuçlar</summary><pre style={{whiteSpace:"pre-wrap",fontSize:12}}>{JSON.stringify(teamImport.results,null,2)}</pre></details>}
+   </div>
    <button className="playerBack" type="button" disabled={loading} onClick={()=>runAudit()} style={{marginTop:12}}>15 ligin veri durumunu denetle</button>
    <button className="playerBack" type="button" disabled={loading} onClick={()=>discoverLeagues()} style={{marginTop:12,marginLeft:10}}>Kalan 34 ligi API-Football'da tara</button>
    {discovery&&<div><p>Tek aday bulunan liglerde takım adlarını güvenli biçimde karşılaştır:</p><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[0,1,2,3,4].map(n=><button key={n} className="playerBack" type="button" disabled={loading} onClick={()=>compareTeams(n)}>Takım taraması {n+1}/5</button>)}</div><div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>{[0,1,2,3,4].map(n=><button key={n} className="playerBack" type="button" disabled={loading} onClick={()=>compareTeams(n,true)}>Kesin ve doğrulanmış adları kaydet · Grup {n+1}/5</button>)}</div></div>}
