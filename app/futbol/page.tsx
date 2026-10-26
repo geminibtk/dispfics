@@ -25,7 +25,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  const fallback=(tab==="upcoming"?upcomingResult.data:latestResult.data)||[];
  const matches=day.length?day.filter(f=>tab==="all"||(tab==="results"?FINISHED.includes(f.status):!FINISHED.includes(f.status))):fallback.filter(f=>!league||f.league_id===league).slice(0,16);
  const standings=standingsResult.data||[];const teams=teamsResult.data||[];
- const ids=[...new Set([...matches.flatMap(f=>[f.home_team_id,f.away_team_id]),...standings.map(s=>s.team_id)].filter(Boolean))];
+ const ids=Array.from(new Set([...matches.flatMap(f=>[f.home_team_id,f.away_team_id]),...standings.map(s=>s.team_id)].filter(Boolean)));
  const {data:names}=ids.length?await db.from("api_football_teams").select("api_team_id,name,logo").in("api_team_id",ids.slice(0,200)):{data:[] as any[]};
  const nameMap=new Map((names||[]).map(t=>[t.api_team_id,t]));
  const query=(overrides:Record<string,string>)=>"/futbol?"+new URLSearchParams({...params,...overrides}).toString();
