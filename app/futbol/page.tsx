@@ -11,7 +11,7 @@ type Fixture={fixture_id:number;league_id:number;kickoff:string;status:string;ho
 function istanbulDate(d:Date){return new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit"}).format(d)}
 export default async function FootballCenter({searchParams}:{searchParams:Promise<{league?:string;date?:string;tab?:string;name?:string}>}){
  const params=await searchParams;const db=footballDb();
- const league=Number(params.league||0);const chosenName=params.name||"";
+ const chosenName=params.name||"";const league=Number(params.league||catalogLeagueIds[chosenName]||0);
  const today=istanbulDate(new Date());
  const selectedDate=/^\d{4}-\d{2}-\d{2}$/.test(params.date||"")?params.date!:today;
  const tab=params.tab==="results"?"results":params.tab==="upcoming"?"upcoming":"all";
