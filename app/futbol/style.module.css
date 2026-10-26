@@ -16,3 +16,9 @@
 .pitchPlayer span{overflow-wrap:anywhere;max-width:95px;line-height:1.2}
 .pitchNumber{display:grid;place-items:center;width:31px;height:31px;border-radius:50%;background:#edf5ec;color:#123d25;font-size:13px;font-weight:900;border:2px solid #67c884;text-shadow:none;box-shadow:0 3px 7px #0005}
 .playerRating{background:#e7bd53;color:#142218;border-radius:5px;padding:2px 5px;font-size:11px;text-shadow:none}
+
+.detailTab,.detailTabSelected{border:1px solid #31573c;border-radius:9px;background:#101b14;color:#afc6b5;padding:11px 15px;font-size:13px;font-weight:700;cursor:pointer}
+.detailTabSelected{background:#245b35;color:#e5fce9;border-color:#57b976}
+.pitchPortrait{width:45px;height:48px;position:relative;display:flex;align-items:center;justify-content:center;background:#143a27;border:1px solid #8aca9c;border-radius:8px}
+.pitchPortrait img{width:42px;height:44px;object-fit:contain}
+.pitchPortrait span{position:absolute;bottom:-5px;right:-5px;background:#f2f6ed;color:#164026;border-radius:50%;width:19px;height:19px;display:grid;place-items:center;font-size:10px;font-weight:800;text-shadow:none}
