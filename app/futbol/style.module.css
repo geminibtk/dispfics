@@ -22,3 +22,10 @@
 .pitchPortrait{width:45px;height:48px;position:relative;display:flex;align-items:center;justify-content:center;background:#143a27;border:1px solid #8aca9c;border-radius:8px}
 .pitchPortrait img{width:42px;height:44px;object-fit:contain}
 .pitchPortrait span{position:absolute;bottom:-5px;right:-5px;background:#f2f6ed;color:#164026;border-radius:50%;width:19px;height:19px;display:grid;place-items:center;font-size:10px;font-weight:800;text-shadow:none}
+
+.substitutePanel{padding:15px;border-top:1px solid #31573c;background:#12271b}
+.substitutePanel h3{font-size:14px;margin:0 0 12px;color:#e5f4e8}
+.substituteRow{display:flex;align-items:center;gap:12px;padding:8px 2px;border-top:1px solid #2a4433}
+.substituteRow img{object-fit:contain;background:#244630;border-radius:8px}
+.substituteRow span{display:flex;flex-direction:column;gap:3px;flex:1;font-size:13px}
+.substituteRow small,.substituteEmpty{color:#9bb5a1;font-size:11px}
