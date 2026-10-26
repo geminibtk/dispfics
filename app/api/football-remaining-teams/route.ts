@@ -137,7 +137,7 @@ export async function GET(req:Request){
       for(const playerName of names){
        try{
         const surname=playerName.split(" ").at(-1)||playerName;
-        const endpoint="https://v3.football.api-sports.io/players?search="+encodeURIComponent(surname)+"&league=265&season="+season;
+        const endpoint="https://v3.football.api-sports.io/players?search="+encodeURIComponent(surname.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-zA-Z0-9 ]/g,""))+"&league=265&season="+season;
         const pr=await fetch(endpoint,{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(10000)});
         if(!pr.ok){diagnostics.push("Oyuncu "+playerName+" "+season+": HTTP "+pr.status);continue;}
         const pj=await pr.json();
