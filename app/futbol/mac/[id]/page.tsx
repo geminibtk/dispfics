@@ -23,7 +23,7 @@ export default async function MatchPage({params}:{params:Promise<{id:string}>}){
     current=true;events=x.events||[];statistics=x.statistics||[];lineups=x.lineups||[];
    }
   }catch{}
- }else apiError=true;
+ }
  if(current&&process.env.API_FOOTBALL_KEY){
   try{const res=await fetch("https://v3.football.api-sports.io/fixtures/players?fixture="+fixtureId,{headers:{"x-apisports-key":process.env.API_FOOTBALL_KEY},next:{revalidate:120},signal:AbortSignal.timeout(8500)});const json=await res.json();if(res.ok&&!Object.keys(json.errors||{}).length)playerStats=json.response||[]}catch{}
  }
