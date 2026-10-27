@@ -3,10 +3,38 @@ const aliases:Record<string,[string,string]>={
 "3. Liga":["3. Liga","Germany"],"Allsvenskan":["Allsvenskan","Sweden"],"Brack Super League":["Super League","Switzerland"],"Česká Liga":["Czech Liga","Czech-Republic"],"CONMEBOL Libertadores":["CONMEBOL Libertadores","World"],"CONMEBOL Sudamericana":["CONMEBOL Sudamericana","World"],"CSL":["Super League","China"],"EFL League One":["League One","England"],"EFL League Two":["League Two","England"],"Ekstraklasa":["Ekstraklasa","Poland"],"Eliteserien":["Eliteserien","Norway"],"Finnliiga":["Veikkausliiga","Finland"],"Hellas Liga":["Super League 1","Greece"],"ISL":["Indian Super League","India"],"Isuzu UTE A League":["A-League","Australia"],"K League 1":["K League 1","South-Korea"],"LALIGA HYPERMOTION":["Segunda División","Spain"],"Liga Azerbaijan":["Premyer Liqa","Azerbaijan"],"Liga BBVA MX":["Liga MX","Mexico"],"Liga Bulgaria":["First League","Bulgaria"],"Liga Colombia":["Primera A","Colombia"],"Liga Cyprus":["1. Division","Cyprus"],"Liga do Brasil":["Serie A","Brazil"],"Liga Hrvatska":["HNL","Croatia"],"Ligue 2 BKT":["Ligue 2","France"],"LPF":["Liga Profesional Argentina","Argentina"],"Magyar Liga":["NB I","Hungary"],"Metropolitan Division":["Metropolitan Division",""],"Ö. Bundesliga":["Bundesliga","Austria"],"SSE Airtricity Men's Premier Division":["Premier Division","Ireland"],"SUPERLIGA":["Liga I","Romania"],"Thailand League":["Thai League 1","Thailand"],"Ukrayina Liha":["Premier League","Ukraine"],"United Emirates League":["Pro League","United-Arab-Emirates"]
 };
 const normalize=(s:string)=>s.toLocaleLowerCase("en").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
+const finalCandidates:Record<string,{id:number;team:number}>={
+ "Liga Azerbaijan":{id:419,team:556},
+ "Liga Bulgaria":{id:172,team:566},
+ "Liga Colombia":{id:239,team:1137},
+ "Liga Cyprus":{id:318,team:2247},
+ "Magyar Liga":{id:271,team:651},
+ "SUPERLIGA":{id:283,team:559},
+ "Thailand League":{id:296,team:2780}
+};
+async function validateCandidate(name:string,key:string):Promise<{id:number;season:number}|null>{
+ const candidate=finalCandidates[name];
+ if(!candidate)return null;
+ try{
+  const res=await fetch("https://v3.football.api-sports.io/leagues?id="+candidate.id,{headers:{"x-apisports-key":key},next:{revalidate:86400},signal:AbortSignal.timeout(9000)});
+  const data=await res.json();
+  if(!res.ok||Object.keys(data.errors||{}).length)return null;
+  const league=data.response?.[0];
+  if(!league||league.league?.id!==candidate.id)return null;
+  const seasons=(league.seasons||[]).map((x:any)=>Number(x.year)).filter((n:number)=>n<=2026).sort((a:number,b:number)=>b-a);
+  for(const season of seasons.slice(0,3)){
+   const teamsRes=await fetch("https://v3.football.api-sports.io/teams?league="+candidate.id+"&season="+season,{headers:{"x-apisports-key":key},next:{revalidate:86400},signal:AbortSignal.timeout(9000)});
+   const teamsData=await teamsRes.json();
+   if(teamsRes.ok&&!Object.keys(teamsData.errors||{}).length&&(teamsData.response||[]).some((row:any)=>row.team?.id===candidate.team))return {id:candidate.id,season};
+  }
+  return null;
+ }catch{return null}
+}
 export async function resolveFootballLeague(name:string,key:string):Promise<{id:number;season:number}|null>{
  const known=catalogLeagueIds[name];
  if(known)return {id:known,season:2026};
  if(!key)return null;
+ if(finalCandidates[name])return validateCandidate(name,key);
  const [search,country]=aliases[name]||[name,""];
  try{
   const url="https://v3.football.api-sports.io/leagues?search="+encodeURIComponent(search);
