@@ -89,7 +89,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  const logoByName=new Map((localLogos||[]).map(t=>[t.name,t.image_url]));
  const localTeamById=new Map((localMatches||[]).map(t=>[t.api_team_id,t.local_team_name]));
  const logoFor=(id:number)=>logoByName.get(localTeamById.get(id))||"";
- const teamInitials=(name:string)=>name.trim().split(/\\s+/).slice(0,2).map(part=>part[0]).join("").toLocaleUpperCase("tr-TR");
+ const teamInitials=(name:string)=>name.trim().split(/\s+/).slice(0,2).map(part=>part[0]).join("").toLocaleUpperCase("tr-TR");
  const teamBadge=(id:number,raw:any)=>{const localName=localTeamById.get(id)||nameMap.get(id)?.name||raw?.name||"Takım";const logo=logoFor(id);return logo?<img src={logo} alt={localName+" arması"} loading="lazy"/>:<span aria-label={localName+" arması bulunamadı"} style={{width:28,height:28,display:"inline-grid",placeItems:"center",flexShrink:0,borderRadius:6,background:"#193124",color:"#c6e3cf",fontSize:11,fontWeight:800}}>{teamInitials(localName)}</span>};
  const link=(overrides:Record<string,string>)=>"/futbol?"+new URLSearchParams({league:String(league),...(chosenName?{name:chosenName}:{}),...overrides}).toString();
  const formatDate=(date:string)=>new Intl.DateTimeFormat("tr-TR",{day:"numeric",month:"long",year:"numeric",timeZone:"Europe/Istanbul"}).format(new Date(date+"T12:00:00+03:00"));
