@@ -45,7 +45,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  const leagueTeamIds=new Set(seasonFixtures.filter(f=>f.league_id===league).flatMap(f=>[f.home_team_id,f.away_team_id]).filter(id=>id>0));
  const teamCount=leagueTeamIds.size>=4?leagueTeamIds.size:new Set((standingsResult.data||[]).map(s=>s.team_id).filter(Boolean)).size;
  const regularSeasonWeeks=teamCount>=4?2*(teamCount-1):null;
- const regularRounds=Array.from(roundMap.keys()).filter(round=>/^Regular Season\\s*-\\s*[0-9]+$/i.test(round));
+ const regularRounds=Array.from(roundMap.keys()).filter(round=>/^Regular Season[ ]*-[ ]*[0-9]+$/i.test(round));
  const roundCandidates=regularRounds.length?regularRounds:Array.from(roundMap.keys());
  const orderedRounds=roundCandidates.filter(round=>roundNumber(round)>0&&(!regularSeasonWeeks||roundNumber(round)<=regularSeasonWeeks)).sort((a,b)=>roundNumber(a)-roundNumber(b));
  // A new matchweek becomes the default at 00:00 Istanbul time on its first match day.
