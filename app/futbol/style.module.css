@@ -29,3 +29,6 @@
 .substituteRow img{object-fit:contain;background:#244630;border-radius:8px}
 .substituteRow span{display:flex;flex-direction:column;gap:3px;flex:1;font-size:13px}
 .substituteRow small,.substituteEmpty{color:#9bb5a1;font-size:11px}
+
+.leagueStrip a{display:inline-flex;align-items:center;gap:9px;flex-shrink:0}
+.leagueLogo{width:24px;height:24px;object-fit:contain;flex-shrink:0}
