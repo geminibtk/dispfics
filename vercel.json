@@ -1,12 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/team-link",
+      "path": "/api/cron/player-team-link",
       "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/team-sync",
-      "schedule": "0 3 * * *"
     }
   ]
 }
