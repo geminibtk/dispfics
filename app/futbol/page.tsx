@@ -1,6 +1,6 @@
 import Link from "next/link";
 import AppShell from "../components/AppShell";
-import {footballDb,leagueName,dateLabel,catalogLeagueIds,preferredLeagueNames} from "../../lib/football-center";
+import {footballDb,dateLabel,catalogLeagueIds,preferredLeagueNames} from "../../lib/football-center";
 import styles from "./style.module.css";
 import LeaguePicker from "./LeaguePicker";
 import {sortOverviewLeagues} from "../../lib/league-presentation";
@@ -19,6 +19,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  const resolved=chosenName?await resolveFootballLeague(chosenName,apiKey):null;
  const league=chosenName?(resolved?.id||0):Number(params.league||203);
  const season=resolved?.season||2026;
+ const displayLeagueName=chosenName||Object.entries(catalogLeagueIds).find(([,id])=>id===league)?.[0]||"Trendyol Süper Lig";
  const today=istanbulDate(new Date());
  const toFixture=(x:any):Fixture=>({fixture_id:x.fixture.id,league_id:x.league.id,kickoff:x.fixture.date,status:x.fixture.status.short,home_team_id:x.teams.home.id,away_team_id:x.teams.away.id,home_goals:x.goals.home,away_goals:x.goals.away,raw:x});
  const [standingsResult,catalogResult]=await Promise.all([db.from("api_football_standings").select("league_id,season,team_id,rank,points,played,goal_difference,raw").eq("league_id",league).eq("season",season).order("rank").limit(30),db.from("league_catalog_summary").select("name,rating,averageAge,averageValue").limit(100)]);
@@ -92,6 +93,6 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
   {matches.length?groupedMatches.map(([date,fixtures])=><div className={styles.panel} style={{marginBottom:14}} key={date}><div className={styles.panelTitle}><strong>{formatDate(date)}</strong></div>
   {fixtures.map(f=><Link className={styles.match} href={"/futbol/mac/"+f.fixture_id} key={f.fixture_id}><div className={styles.matchLeague}><span>{dateLabel(f.kickoff)}</span><span>{FINISHED.includes(f.status)?"Maç sonu":LIVE.includes(f.status)?"CANLI "+(f.raw?.fixture?.status?.elapsed||"")+"′":"Başlamadı"}</span></div><div className={styles.matchLine}><div className={styles.teamName}><img src={logoFor(f.home_team_id,f.raw?.teams?.home)} alt="" loading="lazy"/><span>{nameMap.get(f.home_team_id)?.name||f.raw?.teams?.home?.name||"Ev sahibi"}</span></div><strong className={styles.score}>{f.home_goals??"–"} <span>:</span> {f.away_goals??"–"}</strong><div className={styles.teamName+" "+styles.away}><span>{nameMap.get(f.away_team_id)?.name||f.raw?.teams?.away?.name||"Deplasman"}</span><img src={logoFor(f.away_team_id,f.raw?.teams?.away)} alt="" loading="lazy"/></div></div></Link>)}</div>):<div className={styles.panel}><div className={styles.empty}>{"Bu hafta için maç bulunamadı."}{sourceUnavailable?" API bağlantısı kullanılamadığından kayıtlı veriler kontrol edildi.":""}</div></div>}
   </section>
-  <aside className={styles.secondary}><div className={styles.panel}><div className={styles.panelTitle}><strong>{(chosenName||leagueName(league||203))} · Puan durumu</strong></div><div className={styles.tableHead}><span>Takım</span><span>O</span><span>AV</span><span>P</span></div>{standings.length?standings.map(s=><Link key={s.team_id+"-"+s.season} href={"/futbol/takim/"+s.team_id} className={styles.tableRow}><span className={styles.tableTeam}><b>{s.rank}</b><img src={s.raw?.team?.logo||nameMap.get(s.team_id)?.logo||`https://media.api-sports.io/football/teams/${s.team_id}.png`} alt="" loading="lazy"/><span>{nameMap.get(s.team_id)?.name||s.raw?.team?.name||"Takım"}</span></span><span>{s.played}</span><span>{s.goal_difference}</span><strong>{s.points}</strong></Link>):<div className={styles.empty}>Bu lig için puan durumu bulunamadı.</div>}</div></aside></div>
+  <aside className={styles.secondary}><div className={styles.panel}><div className={styles.panelTitle}><strong>{displayLeagueName} · Puan durumu</strong></div><div className={styles.tableHead}><span>Takım</span><span>O</span><span>AV</span><span>P</span></div>{standings.length?standings.map(s=><Link key={s.team_id+"-"+s.season} href={"/futbol/takim/"+s.team_id} className={styles.tableRow}><span className={styles.tableTeam}><b>{s.rank}</b><img src={s.raw?.team?.logo||nameMap.get(s.team_id)?.logo||`https://media.api-sports.io/football/teams/${s.team_id}.png`} alt="" loading="lazy"/><span>{nameMap.get(s.team_id)?.name||s.raw?.team?.name||"Takım"}</span></span><span>{s.played}</span><span>{s.goal_difference}</span><strong>{s.points}</strong></Link>):<div className={styles.empty}>Bu lig için puan durumu bulunamadı.</div>}</div></aside></div>
  </div></AppShell>;
 }
