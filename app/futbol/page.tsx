@@ -20,9 +20,9 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  const season=resolved?.season||2026;
  const today=istanbulDate(new Date());
  const toFixture=(x:any):Fixture=>({fixture_id:x.fixture.id,league_id:x.league.id,kickoff:x.fixture.date,status:x.fixture.status.short,home_team_id:x.teams.home.id,away_team_id:x.teams.away.id,home_goals:x.goals.home,away_goals:x.goals.away,raw:x});
- const [standingsResult,catalogResult]=await Promise.all([db.from("api_football_standings").select("league_id,season,team_id,rank,points,played,goal_difference,raw").eq("league_id",league).order("rank").limit(30),db.from("league_catalog_summary").select("name,rating").limit(100)]);
+ const [standingsResult,catalogResult]=await Promise.all([db.from("api_football_standings").select("league_id,season,team_id,rank,points,played,goal_difference,raw").eq("league_id",league).eq("season",season).order("rank").limit(30),db.from("league_catalog_summary").select("name,rating").limit(100)]);
  let seasonFixtures:Fixture[]=[];
- let sourceUnavailable=false;
+ let sourceUnavailable=Boolean(chosenName&&!resolved);
  if(apiKey&&league){
   try{
    const query=new URLSearchParams({league:String(league),season:String(season),timezone:"Europe/Istanbul"});
