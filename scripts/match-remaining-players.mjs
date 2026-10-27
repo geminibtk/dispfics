@@ -8,6 +8,15 @@ import {createClient} from "@supabase/supabase-js";
 import {readFileSync,writeFileSync,mkdirSync,renameSync,existsSync} from "node:fs";
 import {dirname,resolve} from "node:path";
 const apply=process.argv.includes("--apply");
+// Conservative pacing: at most 20 API calls per rolling minute, across this run.
+const minRequestIntervalMs=3100;
+let lastRequestAt=0;
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function paceRequest(){
+ const wait=Math.max(0,lastRequestAt+minRequestIntervalMs-Date.now());
+ if(wait)await sleep(wait);
+ lastRequestAt=Date.now();
+}
 const url=process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key=process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SECRET_KEY;
 const apiKey=process.env.API_FOOTBALL_KEY;
@@ -83,6 +92,7 @@ for(const [id,team] of uniqueTeams){
   continue;
  }
  try{
+  await paceRequest();
   const response=await fetch("https://v3.football.api-sports.io/players/squads?team="+encodeURIComponent(id),{headers:{"x-apisports-key":apiKey},signal:AbortSignal.timeout(20000)});
   requests++;
   const body=await response.json().catch(()=>null);
