@@ -5,6 +5,8 @@
  * Apply after reviewing: node --env-file=.env.production.local scripts/match-remaining-players.mjs --apply
  */
 import {createClient} from "@supabase/supabase-js";
+import {readFileSync,writeFileSync,mkdirSync,renameSync,existsSync} from "node:fs";
+import {dirname,resolve} from "node:path";
 const apply=process.argv.includes("--apply");
 const url=process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key=process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SECRET_KEY;
@@ -56,20 +58,45 @@ function qualifies(local,remote){
  return exact||(hasSurname&&hasGiven);
 }
 let requests=0,errors=0,ambiguous=0,candidates=0,inserted=0,skipped=0;
+const checkpointPath=resolve(".vercel/player-match-second-pass-checkpoint.json");
+let checkpoint={version:1,completed:{}};
+if(existsSync(checkpointPath)){
+ const loaded=JSON.parse(readFileSync(checkpointPath,"utf8"));
+ if(loaded.version!==1||!loaded.completed||typeof loaded.completed!=="object")throw Error("Invalid checkpoint");
+ checkpoint=loaded;
+}
+function saveCheckpoint(){
+ mkdirSync(dirname(checkpointPath),{recursive:true});
+ writeFileSync(checkpointPath+".tmp",JSON.stringify(checkpoint));
+ renameSync(checkpointPath+".tmp",checkpointPath);
+}
 const proposals=[];
+let reusedTeams=0,quotaStopped=false;
 for(const [id,team] of uniqueTeams){
  if(!team)continue;
  const locals=byClub.get(team.local_team_name)||[];
  if(!locals.length)continue;
  let squad;
+ if(checkpoint.completed[id]?.club===team.local_team_name){
+  proposals.push(...checkpoint.completed[id].proposals);
+  reusedTeams++;
+  continue;
+ }
  try{
   const response=await fetch("https://v3.football.api-sports.io/players/squads?team="+encodeURIComponent(id),{headers:{"x-apisports-key":apiKey},signal:AbortSignal.timeout(20000)});
   requests++;
-  if(!response.ok){errors++;if(response.status===429)break;continue}
-  const body=await response.json();
-  if(body.errors&&Object.keys(body.errors).length){errors++;break}
-  squad=(body.response||[]).flatMap(x=>x.players||[]);
- }catch{errors++;continue}
+  const body=await response.json().catch(()=>null);
+  const apiErrors=body?.errors&&Object.keys(body.errors).length?body.errors:null;
+  if(!response.ok||apiErrors){
+   errors++;
+   console.error("API_ERROR",JSON.stringify({team:id,status:response.status,apiErrors,minuteRemaining:response.headers.get("x-ratelimit-requests-remaining"),dailyRemaining:response.headers.get("x-ratelimit-remaining")}));
+   if(response.status===429||response.status===401||response.status===403||/quota|limit|rate|requests/i.test(JSON.stringify(apiErrors||{}))){quotaStopped=true;break}
+   continue;
+  }
+  if(!Array.isArray(body?.response))throw Error("Unexpected API response");
+  squad=body.response.flatMap(x=>x.players||[]);
+ }catch(e){errors++;console.error("NETWORK_ERROR",JSON.stringify({team:id,message:String(e?.message||e)}));continue}
+ const teamProposals=[];
  const possible=new Map();
  const reverse=new Map();
  for(const p of locals){
@@ -81,13 +108,16 @@ for(const [id,team] of uniqueTeams){
  }
  for(const proposal of possible.values()){
   if(reverse.get(proposal.api_football_player_id)!==1){ambiguous++;continue}
-  proposals.push(proposal);
+  teamProposals.push(proposal);
  }
+ proposals.push(...teamProposals);
+ checkpoint.completed[id]={club:team.local_team_name,proposals:teamProposals};
+ saveCheckpoint();
  if(requests%25===0)console.log(JSON.stringify({requests,candidates:proposals.length,errors,ambiguous}));
 }
 const counts=new Map();
 for(const p of proposals)counts.set(p.api_football_player_id,(counts.get(p.api_football_player_id)||0)+1);
-const safe=proposals.filter(p=>counts.get(p.api_football_player_id)===1&&!existingApi.has(p.api_football_player_id));
+const safe=proposals.filter(p=>counts.get(p.api_football_player_id)===1&&!existingApi.has(p.api_football_player_id)&&!existingLocal.has(p.external_id));
 candidates=safe.length;
 if(apply){
  for(const p of safe){
@@ -99,4 +129,4 @@ if(apply){
 }
 const {count:after,error}=await db.from("scouting_players").select("*",{head:true,count:"exact"});
 if(error||after!==before)throw Error("Scouting player count mismatch");
-console.log("FINISHED",JSON.stringify({mode:apply?"apply":"dry-run",scoutingPlayers:after,existingLinks:links.length,requests,candidates,inserted,skipped,ambiguous,errors}));
+console.log("FINISHED",JSON.stringify({mode:apply?"apply":"dry-run",scoutingPlayers:after,existingLinks:links.length,requests,reusedTeams,completedTeams:Object.keys(checkpoint.completed).length,quotaStopped,candidates,inserted,skipped,ambiguous,errors}));
