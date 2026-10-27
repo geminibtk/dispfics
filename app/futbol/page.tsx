@@ -40,13 +40,20 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
   roundMap.get(round)!.push(fixture);
  }
  const roundNumber=(round:string)=>{const match=round.match(/([0-9]+)$/);return match?Number(match[1]):0};
- const orderedRounds=Array.from(roundMap.keys()).sort((a,b)=>roundNumber(a)-roundNumber(b));
+ // A double round-robin league with N teams has 2*(N-1) matchweeks.
+ // Count distinct clubs from the selected league's fixtures, never a global 38-week default.
+ const leagueTeamIds=new Set(seasonFixtures.filter(f=>f.league_id===league).flatMap(f=>[f.home_team_id,f.away_team_id]).filter(id=>id>0));
+ const teamCount=leagueTeamIds.size>=4?leagueTeamIds.size:new Set((standingsResult.data||[]).map(s=>s.team_id).filter(Boolean)).size;
+ const regularSeasonWeeks=teamCount>=4?2*(teamCount-1):null;
+ const regularRounds=Array.from(roundMap.keys()).filter(round=>/^Regular Season\\s*-\\s*[0-9]+$/i.test(round));
+ const roundCandidates=regularRounds.length?regularRounds:Array.from(roundMap.keys());
+ const orderedRounds=roundCandidates.filter(round=>roundNumber(round)>0&&(!regularSeasonWeeks||roundNumber(round)<=regularSeasonWeeks)).sort((a,b)=>roundNumber(a)-roundNumber(b));
  // A new matchweek becomes the default at 00:00 Istanbul time on its first match day.
  const todayStart=new Date(today+"T00:00:00+03:00").getTime();
  const roundStart=(round:string)=>Math.min(...(roundMap.get(round)||[]).map(f=>new Date(istanbulDate(new Date(f.kickoff))+"T00:00:00+03:00").getTime()));
  const startedRounds=orderedRounds.filter(round=>roundStart(round)<=todayStart);
  const defaultRound=startedRounds.length?startedRounds.reduce((best,round)=>roundStart(round)>roundStart(best)?round:best):orderedRounds[0]||"";
- const selectedRound=params.week&&roundMap.has(params.week)?params.week:defaultRound;
+ const selectedRound=params.week&&orderedRounds.includes(params.week)?params.week:defaultRound;
  const matches=(roundMap.get(selectedRound)||[]).slice().sort((a,b)=>new Date(a.kickoff).getTime()-new Date(b.kickoff).getTime());
  const groupedMatches=Array.from(matches.reduce((map,fixture)=>{const date=istanbulDate(new Date(fixture.kickoff));if(!map.has(date))map.set(date,[]);map.get(date)!.push(fixture);return map},new Map<string,Fixture[]>()).entries());
  const roundOptions=orderedRounds.map(round=>({value:round,label:roundNumber(round)?roundNumber(round)+". hafta":round}));
