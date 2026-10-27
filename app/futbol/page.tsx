@@ -45,9 +45,10 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  const leagueTeamIds=new Set(seasonFixtures.filter(f=>f.league_id===league).flatMap(f=>[f.home_team_id,f.away_team_id]).filter(id=>id>0));
  const teamCount=leagueTeamIds.size>=4?leagueTeamIds.size:new Set((standingsResult.data||[]).map(s=>s.team_id).filter(Boolean)).size;
  const regularSeasonWeeks=teamCount>=4?2*(teamCount-1):null;
+ const isUefaCompetition=[2,3,848].includes(league);
  const regularRounds=Array.from(roundMap.keys()).filter(round=>/^Regular Season[ ]*-[ ]*[0-9]+$/i.test(round));
- const roundCandidates=regularRounds.length?regularRounds:Array.from(roundMap.keys());
- const orderedRounds=roundCandidates.filter(round=>roundNumber(round)>0&&(!regularSeasonWeeks||roundNumber(round)<=regularSeasonWeeks)).sort((a,b)=>roundNumber(a)-roundNumber(b));
+ const roundCandidates=isUefaCompetition?Array.from(roundMap.keys()):regularRounds.length?regularRounds:Array.from(roundMap.keys());
+ const orderedRounds=roundCandidates.filter(round=>isUefaCompetition||roundNumber(round)>0&&(!regularSeasonWeeks||roundNumber(round)<=regularSeasonWeeks)).sort((a,b)=>isUefaCompetition?Math.min(...(roundMap.get(a)||[]).map(f=>new Date(f.kickoff).getTime()))-Math.min(...(roundMap.get(b)||[]).map(f=>new Date(f.kickoff).getTime())):roundNumber(a)-roundNumber(b));
  // A new matchweek becomes the default at 00:00 Istanbul time on its first match day.
  const todayStart=new Date(today+"T00:00:00+03:00").getTime();
  const roundStart=(round:string)=>Math.min(...(roundMap.get(round)||[]).map(f=>new Date(istanbulDate(new Date(f.kickoff))+"T00:00:00+03:00").getTime()));
@@ -56,7 +57,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  const selectedRound=params.week&&orderedRounds.includes(params.week)?params.week:defaultRound;
  const matches=(roundMap.get(selectedRound)||[]).slice().sort((a,b)=>new Date(a.kickoff).getTime()-new Date(b.kickoff).getTime());
  const groupedMatches=Array.from(matches.reduce((map,fixture)=>{const date=istanbulDate(new Date(fixture.kickoff));if(!map.has(date))map.set(date,[]);map.get(date)!.push(fixture);return map},new Map<string,Fixture[]>()).entries());
- const roundOptions=orderedRounds.map(round=>({value:round,label:roundNumber(round)?roundNumber(round)+". hafta":round}));
+ const roundOptions=orderedRounds.map(round=>({value:round,label:isUefaCompetition?round.replace(/^League Stage[ ]*-[ ]*/i,"Lig aşaması ").replace(/^Group Stage[ ]*-[ ]*/i,"Grup aşaması ").replace(/^Round of 16$/i,"Son 16").replace(/^Quarter-finals$/i,"Çeyrek final").replace(/^Semi-finals$/i,"Yarı final").replace(/^Final$/i,"Final"):roundNumber(round)?roundNumber(round)+". hafta":round}));
  let standings:any[]=standingsResult.data||[];
  if(process.env.API_FOOTBALL_KEY&&!chosenName){
   try{
@@ -83,7 +84,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
   <div className={styles.leagueStrip}>{preferredLeagueNames.map(name=><Link key={name} className={(chosenName===name||(!chosenName&&catalogLeagueIds[name]===league))?styles.selected:""} href={link({league:String(catalogLeagueIds[name]||""),name:catalogLeagueIds[name]?"":name})}>{name}</Link>)}<LeaguePicker names={others} selected={chosenName||catalog.find(n=>catalogLeagueIds[n]===league)||""} tab="results"/></div>
   <WeekPicker rounds={roundOptions} selected={selectedRound} league={league} name={chosenName}/>
   <div className={styles.layout}><section className={styles.primary}>
-  {matches.length?groupedMatches.map(([date,fixtures])=><div className={styles.panel} style={{marginBottom:14}} key={date}><div className={styles.panelTitle}><strong>{formatDate(date)}{selectedRound?" · "+selectedRound.replace(/Regular Season\s*-\s*/i,"")+". hafta":""}</strong></div>
+  {matches.length?groupedMatches.map(([date,fixtures])=><div className={styles.panel} style={{marginBottom:14}} key={date}><div className={styles.panelTitle}><strong>{formatDate(date)}{selectedRound?" · "+(isUefaCompetition?roundOptions.find(r=>r.value===selectedRound)?.label:selectedRound.replace(/Regular Season\s*-\s*/i,"")+". hafta"):""}</strong></div>
   {fixtures.map(f=><Link className={styles.match} href={"/futbol/mac/"+f.fixture_id} key={f.fixture_id}><div className={styles.matchLeague}><span>{dateLabel(f.kickoff)}</span><span>{FINISHED.includes(f.status)?"Maç sonu":LIVE.includes(f.status)?"CANLI "+(f.raw?.fixture?.status?.elapsed||"")+"′":"Başlamadı"}</span></div><div className={styles.matchLine}><div className={styles.teamName}><img src={logoFor(f.home_team_id,f.raw?.teams?.home)} alt="" loading="lazy"/><span>{nameMap.get(f.home_team_id)?.name||f.raw?.teams?.home?.name||"Ev sahibi"}</span></div><strong className={styles.score}>{f.home_goals??"–"} <span>:</span> {f.away_goals??"–"}</strong><div className={styles.teamName+" "+styles.away}><span>{nameMap.get(f.away_team_id)?.name||f.raw?.teams?.away?.name||"Deplasman"}</span><img src={logoFor(f.away_team_id,f.raw?.teams?.away)} alt="" loading="lazy"/></div></div></Link>)}</div>):<div className={styles.panel}><div className={styles.empty}>{"Bu hafta için maç bulunamadı."}{sourceUnavailable?" API bağlantısı kullanılamadığından kayıtlı veriler kontrol edildi.":""}</div></div>}
   </section>
   <aside className={styles.secondary}><div className={styles.panel}><div className={styles.panelTitle}><strong>{leagueName(league||203)} · Puan durumu</strong></div><div className={styles.tableHead}><span>Takım</span><span>O</span><span>AV</span><span>P</span></div>{standings.length?standings.map(s=><Link key={s.team_id+"-"+s.season} href={"/futbol/takim/"+s.team_id} className={styles.tableRow}><span className={styles.tableTeam}><b>{s.rank}</b><img src={s.raw?.team?.logo||nameMap.get(s.team_id)?.logo||`https://media.api-sports.io/football/teams/${s.team_id}.png`} alt="" loading="lazy"/><span>{nameMap.get(s.team_id)?.name||s.raw?.team?.name||"Takım"}</span></span><span>{s.played}</span><span>{s.goal_difference}</span><strong>{s.points}</strong></Link>):<div className={styles.empty}>Bu lig için puan durumu bulunamadı.</div>}</div></aside></div>
