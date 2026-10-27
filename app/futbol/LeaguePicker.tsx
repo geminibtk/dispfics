@@ -1,12 +1,14 @@
 "use client";
-import {useRouter} from "next/navigation";
-import {useState} from "react";
+import {useRouter,useSearchParams} from "next/navigation";
+import {useEffect,useState} from "react";
 import {catalogLeagueIds} from "../../lib/football-center";
 import {leagueLogo} from "../../lib/league-presentation";
 export default function LeaguePicker({names,selected,tab}:{names:string[];selected:string;tab:string}){
  const router=useRouter();
+ const searchParams=useSearchParams();
  const [open,setOpen]=useState(false);
  const logo=leagueLogo;
+ useEffect(()=>{setOpen(false)},[searchParams]);
  return <div style={{position:"relative",flexShrink:0}}>
   <button type="button" aria-expanded={open} aria-label="Diğer ligler" onClick={()=>setOpen(!open)} style={{display:"flex",alignItems:"center",gap:8,background:"#12251a",color:"#e5f5e9",border:"1px solid #365c41",borderRadius:10,padding:"10px 13px",minWidth:155,cursor:"pointer"}}>
    {names.includes(selected)&&logo(selected)?<img src={logo(selected)!} alt="" width={22} height={22} style={{objectFit:"contain"}}/>:null}
@@ -14,7 +16,7 @@ export default function LeaguePicker({names,selected,tab}:{names:string[];select
   </button>
   {open?<div style={{position:"absolute",top:"100%",right:0,zIndex:20,width:265,maxHeight:330,overflowY:"auto",background:"#12251a",border:"1px solid #365c41",borderRadius:10,boxShadow:"0 12px 30px #0009",marginTop:4}}>
    {names.map(name=><button type="button" key={name} onClick={()=>{setOpen(false);router.push("/futbol?"+new URLSearchParams({league:String(catalogLeagueIds[name]||""),...(catalogLeagueIds[name]?{}:{name})}).toString())}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",background:name===selected?"#204c2d":"transparent",color:"#e5f5e9",border:0,padding:"10px 12px",cursor:"pointer"}}>
-    {logo(name)?<img src={logo(name)!} alt="" width={24} height={24} loading="lazy" style={{objectFit:"contain"}}/>:<span style={{width:24,textAlign:"center",fontWeight:700,fontSize:12}}>{name.slice(0,2).toUpperCase()}</span>}
+    {name===selected&&logo(name)?<img src={logo(name)!} alt="" width={24} height={24} loading="lazy" style={{objectFit:"contain"}}/>:null}
     <span>{name}</span>
    </button>)}
   </div>:null}
