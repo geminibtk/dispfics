@@ -3,7 +3,7 @@ import {createClient} from "@supabase/supabase-js";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 export const maxDuration=60;
-const fold=(v:string)=>v.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("tr-TR").replace(/[^a-z0-9]/g,"");
+const fold=(v:string)=>v.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
 export async function GET(req:Request){
  if(!process.env.CRON_SECRET||req.headers.get("authorization")!==`Bearer ${process.env.CRON_SECRET}`)return NextResponse.json({error:"Unauthorized"},{status:401});
  const url=process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -19,7 +19,9 @@ export async function GET(req:Request){
  const start=(day*12)%Math.max(unique.length,1);
  const batch=Array.from({length:Math.min(12,unique.length)},(_,i)=>unique[(start+i)%unique.length]);
  let checkedTeams=0,checkedPlayers=0,linked=0,ambiguous=0,apiErrors=0;
+ const deadline=Date.now()+45000;
  for(const team of batch){
+  if(Date.now()>deadline)break;
   const {data:locals,error:localError}=await db.from("scouting_players").select("external_id,name,age,birthdate").eq("club",team.local_team_name).limit(1000);
   if(localError||!locals?.length)continue;
   try{
