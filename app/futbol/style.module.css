@@ -32,3 +32,7 @@
 
 .leagueStrip a{display:inline-flex;align-items:center;gap:9px;flex-shrink:0}
 .leagueLogo{width:24px;height:24px;object-fit:contain;flex-shrink:0}
+
+.leagueNav{display:flex;align-items:flex-start;gap:8px;position:relative;z-index:5;min-width:0;margin-bottom:12px}
+.leagueNav .leagueStrip{flex:1;min-width:0;padding-bottom:6px}
+@media(max-width:600px){.leagueNav{gap:6px}.leagueNav .leagueStrip{flex:1;min-width:0}}
