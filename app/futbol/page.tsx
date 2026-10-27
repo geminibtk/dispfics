@@ -3,6 +3,7 @@ import AppShell from "../components/AppShell";
 import {footballDb,leagueName,dateLabel,catalogLeagueIds,preferredLeagueNames} from "../../lib/football-center";
 import styles from "./style.module.css";
 import LeaguePicker from "./LeaguePicker";
+import {sortOverviewLeagues} from "../../lib/league-presentation";
 import WeekPicker from "./WeekPicker";
 import {resolveFootballLeague} from "../../lib/football-league-resolver";
 export const dynamic="force-dynamic";
@@ -20,7 +21,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  const season=resolved?.season||2026;
  const today=istanbulDate(new Date());
  const toFixture=(x:any):Fixture=>({fixture_id:x.fixture.id,league_id:x.league.id,kickoff:x.fixture.date,status:x.fixture.status.short,home_team_id:x.teams.home.id,away_team_id:x.teams.away.id,home_goals:x.goals.home,away_goals:x.goals.away,raw:x});
- const [standingsResult,catalogResult]=await Promise.all([db.from("api_football_standings").select("league_id,season,team_id,rank,points,played,goal_difference,raw").eq("league_id",league).eq("season",season).order("rank").limit(30),db.from("league_catalog_summary").select("name,rating").limit(100)]);
+ const [standingsResult,catalogResult]=await Promise.all([db.from("api_football_standings").select("league_id,season,team_id,rank,points,played,goal_difference,raw").eq("league_id",league).eq("season",season).order("rank").limit(30),db.from("league_catalog_summary").select("name,rating,averageAge,averageValue").limit(100)]);
  let seasonFixtures:Fixture[]=[];
  let sourceUnavailable=Boolean(chosenName&&!resolved);
  if(apiKey&&league){
@@ -76,7 +77,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
   }catch{}
  }
  const catalog=(catalogResult.data||[]).map(x=>x.name).filter(Boolean);
- const others=Array.from(new Set([...Object.keys(catalogLeagueIds),...catalog])).filter(n=>!preferredLeagueNames.includes(n)).sort((a,b)=>a.localeCompare(b,"tr"));
+ const others=sortOverviewLeagues((catalogResult.data||[])).map(l=>l.name).filter(n=>!preferredLeagueNames.includes(n));
  const ids=Array.from(new Set([...matches.flatMap(f=>[f.home_team_id,f.away_team_id]),...standings.map(s=>s.team_id)].filter(Boolean)));
  const {data:names}=ids.length?await db.from("api_football_teams").select("api_team_id,name,logo").in("api_team_id",ids.slice(0,500)):{data:[] as any[]};
  const nameMap=new Map((names||[]).map(t=>[t.api_team_id,t]));const logoFor=(id:number,raw:any)=>raw?.logo||nameMap.get(id)?.logo||`https://media.api-sports.io/football/teams/${id}.png`;
