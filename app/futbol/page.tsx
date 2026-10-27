@@ -39,7 +39,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
   if(!roundMap.has(round))roundMap.set(round,[]);
   roundMap.get(round)!.push(fixture);
  }
- const roundNumber=(round:string)=>{const match=round.match(/(?:Regular Season\\s*-\\s*|\\b)(\\d+)\\s*$/i);return match?Number(match[1]):0};
+ const roundNumber=(round:string)=>{const match=round.match(/(\\d+)\\s*$/);return match?Number(match[1]):0};
  const orderedRounds=Array.from(roundMap.keys()).sort((a,b)=>roundNumber(a)-roundNumber(b));
  // A new matchweek becomes the default at 00:00 Istanbul time on its first match day.
  const todayStart=new Date(today+"T00:00:00+03:00").getTime();
