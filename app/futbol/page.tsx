@@ -33,7 +33,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
   return (data||[]) as Fixture[];
  }
  const [standingsResult,catalogResult]=await Promise.all([db.from("api_football_standings").select("league_id,season,team_id,rank,points,played,goal_difference,raw").eq("league_id",league).order("rank").limit(30),db.from("league_catalog_summary").select("name,rating").limit(100)]);
- let matches:Fixture[]=[];let matchDate=today;let sourceUnavailable=false;
+ let matches:Fixture[]=[];let matchDate=today;let sourceUnavailable=false;let selectedRound="";
  // Today is the only valid date for live matches. Completed and upcoming fixtures
  // search backwards/forwards one calendar day at a time, stopping at the first match day.
  const offsets=tab==="live"?[0]:tab==="results"?Array.from({length:15},(_,i)=>-i):Array.from({length:15},(_,i)=>i);
@@ -45,9 +45,29 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
   const fixtures=remote===null?await storedFixtures(date):remote;
   if(remote===null)sourceUnavailable=true;
   const eligible=fixtures.filter(f=>f.league_id===league&&qualifies(f,tab));
-  if(eligible.length){matches=eligible;matchDate=date;break}
+  if(eligible.length){matches=eligible;matchDate=date;selectedRound=eligible[0]?.raw?.league?.round||"";break}
   // When the remote API is temporarily unavailable, still check stored dates.
  }
+ // Collect the entire league matchweek, not only fixtures played on the first matching date.
+ if(matches.length&&tab!=="live"&&selectedRound){
+  let roundFixtures:Fixture[]|null=null;
+  if(apiKey){
+   try{
+    const query=new URLSearchParams({league:String(league),season:"2026",round:selectedRound,timezone:"Europe/Istanbul"});
+    const res=await fetch("https://v3.football.api-sports.io/fixtures?"+query.toString(),{headers:{"x-apisports-key":apiKey},next:{revalidate:60},signal:AbortSignal.timeout(9000)});
+    const json=await res.json();
+    if(res.ok&&!Object.keys(json.errors||{}).length)roundFixtures=(json.response||[]).map(toFixture);
+   }catch{}
+  }
+  if(roundFixtures===null){
+   sourceUnavailable=true;
+   const {data}=await db.from("api_football_fixtures").select("fixture_id,league_id,kickoff,status,home_team_id,away_team_id,home_goals,away_goals,raw").eq("league_id",league).gte("kickoff",new Date(new Date(matchDate+"T12:00:00+03:00").getTime()-8*86400000).toISOString()).lte("kickoff",new Date(new Date(matchDate+"T12:00:00+03:00").getTime()+8*86400000).toISOString()).limit(250);
+   roundFixtures=(data||[]).filter((x:any)=>x.raw?.league?.round===selectedRound) as Fixture[];
+  }
+  if(roundFixtures.length)matches=roundFixtures.filter(f=>f.league_id===league);
+ }
+ matches.sort((a,b)=>new Date(a.kickoff).getTime()-new Date(b.kickoff).getTime());
+ const groupedMatches=Array.from(matches.reduce((map,fixture)=>{const date=istanbulDate(new Date(fixture.kickoff));if(!map.has(date))map.set(date,[]);map.get(date)!.push(fixture);return map},new Map<string,Fixture[]>()).entries());
  let standings:any[]=standingsResult.data||[];
  if(process.env.API_FOOTBALL_KEY&&!chosenName){
   try{
@@ -67,14 +87,16 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  const {data:names}=ids.length?await db.from("api_football_teams").select("api_team_id,name,logo").in("api_team_id",ids.slice(0,500)):{data:[] as any[]};
  const nameMap=new Map((names||[]).map(t=>[t.api_team_id,t]));const logoFor=(id:number,raw:any)=>raw?.team?.logo||nameMap.get(id)?.logo||`https://media.api-sports.io/football/teams/${id}.png`;
  const link=(overrides:Record<string,string>)=>"/futbol?"+new URLSearchParams({league:String(league),tab,...(chosenName?{name:chosenName}:{}),...overrides}).toString();
- const shownDate=new Intl.DateTimeFormat("tr-TR",{day:"numeric",month:"long",year:"numeric",timeZone:"Europe/Istanbul"}).format(new Date(matchDate+"T12:00:00+03:00"));
+ const formatDate=(date:string)=>new Intl.DateTimeFormat("tr-TR",{day:"numeric",month:"long",year:"numeric",timeZone:"Europe/Istanbul"}).format(new Date(date+"T12:00:00+03:00"));
  return <AppShell title="Futbol Merkezi" hideTitle><div className={styles.root}>
   <div className={styles.hero}><div><span className={styles.kicker}>YANIMDAFUTBOL · FUTBOL MERKEZİ</span><h1>Futbolun <em>nabzı.</em></h1><p>Maçlar, sonuçlar ve lig tabloları. Hepsi tek yerde.</p></div><div className={styles.heroIcon}>⚽</div></div>
   <div className={styles.toolbar}><div className={styles.sectionTitle}><h2>Maçlar</h2></div></div>
   <div className={styles.leagueStrip}>{preferredLeagueNames.map(name=><Link key={name} className={(chosenName===name||(!chosenName&&catalogLeagueIds[name]===league))?styles.selected:""} href={link({league:String(catalogLeagueIds[name]||""),name:catalogLeagueIds[name]?"":name})}>{name}</Link>)}<LeaguePicker names={others} selected={chosenName||catalog.find(n=>catalogLeagueIds[n]===league)||""} tab={tab}/></div>
   <nav className={styles.tabs} aria-label="Maç durumu"><Link className={tab==="results"?styles.selected:""} href={link({tab:"results"})}>Oynanmış maçlar</Link><Link className={tab==="live"?styles.selected:""} href={link({tab:"live"})}>Canlı maçlar</Link><Link className={tab==="upcoming"?styles.selected:""} href={link({tab:"upcoming"})}>Gelecek maçlar</Link></nav>
-  <div className={styles.layout}><section className={styles.primary}><div className={styles.panel}><div className={styles.panelTitle}><strong>{matches.length?shownDate:tab==="live"?"Bugün":tab==="results"?"Son sonuçlar":"Yaklaşan maçlar"}</strong></div>
-  {matches.length?matches.map(f=><Link className={styles.match} href={"/futbol/mac/"+f.fixture_id} key={f.fixture_id}><div className={styles.matchLeague}><span>{dateLabel(f.kickoff)}</span><span>{FINISHED.includes(f.status)?"Maç sonu":LIVE.includes(f.status)?"CANLI "+(f.raw?.fixture?.status?.elapsed||"")+"′":"Başlamadı"}</span></div><div className={styles.matchLine}><div className={styles.teamName}><img src={logoFor(f.home_team_id,f.raw?.teams?.home)} alt="" loading="lazy"/><span>{nameMap.get(f.home_team_id)?.name||f.raw?.teams?.home?.name||"Ev sahibi"}</span></div><strong className={styles.score}>{f.home_goals??"–"} <span>:</span> {f.away_goals??"–"}</strong><div className={styles.teamName+" "+styles.away}><span>{nameMap.get(f.away_team_id)?.name||f.raw?.teams?.away?.name||"Deplasman"}</span><img src={logoFor(f.away_team_id,f.raw?.teams?.away)} alt="" loading="lazy"/></div></div></Link>):<div className={styles.empty}>{tab==="live"?"Şu anda bu ligde canlı maç yok.":tab==="results"?"Son 15 günde tamamlanan maç bulunamadı.":"Önümüzdeki 15 günde planlanmış maç bulunamadı."}{sourceUnavailable?" API bağlantısı kullanılamadığından kayıtlı veriler kontrol edildi.":""}</div>}</div></section>
+  <div className={styles.layout}><section className={styles.primary}>
+  {matches.length?groupedMatches.map(([date,fixtures])=><div className={styles.panel} style={{marginBottom:14}} key={date}><div className={styles.panelTitle}><strong>{formatDate(date)}{selectedRound?" · "+selectedRound.replace(/Regular Season\s*-\s*/i,"")+". hafta":""}</strong></div>
+  {fixtures.map(f=><Link className={styles.match} href={"/futbol/mac/"+f.fixture_id} key={f.fixture_id}><div className={styles.matchLeague}><span>{dateLabel(f.kickoff)}</span><span>{FINISHED.includes(f.status)?"Maç sonu":LIVE.includes(f.status)?"CANLI "+(f.raw?.fixture?.status?.elapsed||"")+"′":"Başlamadı"}</span></div><div className={styles.matchLine}><div className={styles.teamName}><img src={logoFor(f.home_team_id,f.raw?.teams?.home)} alt="" loading="lazy"/><span>{nameMap.get(f.home_team_id)?.name||f.raw?.teams?.home?.name||"Ev sahibi"}</span></div><strong className={styles.score}>{f.home_goals??"–"} <span>:</span> {f.away_goals??"–"}</strong><div className={styles.teamName+" "+styles.away}><span>{nameMap.get(f.away_team_id)?.name||f.raw?.teams?.away?.name||"Deplasman"}</span><img src={logoFor(f.away_team_id,f.raw?.teams?.away)} alt="" loading="lazy"/></div></div></Link>)}</div>):<div className={styles.panel}><div className={styles.empty}>{tab==="live"?"Şu anda bu ligde canlı maç yok.":tab==="results"?"Son 15 günde tamamlanan maç bulunamadı.":"Önümüzdeki 15 günde planlanmış maç bulunamadı."}{sourceUnavailable?" API bağlantısı kullanılamadığından kayıtlı veriler kontrol edildi.":""}</div></div>}
+  </section>
   <aside className={styles.secondary}><div className={styles.panel}><div className={styles.panelTitle}><strong>{leagueName(league||203)} · Puan durumu</strong></div><div className={styles.tableHead}><span>Takım</span><span>O</span><span>AV</span><span>P</span></div>{standings.length?standings.map(s=><Link key={s.team_id+"-"+s.season} href={"/futbol/takim/"+s.team_id} className={styles.tableRow}><span className={styles.tableTeam}><b>{s.rank}</b><img src={s.raw?.team?.logo||nameMap.get(s.team_id)?.logo||`https://media.api-sports.io/football/teams/${s.team_id}.png`} alt="" loading="lazy"/><span>{nameMap.get(s.team_id)?.name||s.raw?.team?.name||"Takım"}</span></span><span>{s.played}</span><span>{s.goal_difference}</span><strong>{s.points}</strong></Link>):<div className={styles.empty}>Bu lig için puan durumu bulunamadı.</div>}</div></aside></div>
  </div></AppShell>;
 }
