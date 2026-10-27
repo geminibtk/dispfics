@@ -12,4 +12,4 @@ export function dateLabel(v:string){return new Intl.DateTimeFormat("tr-TR",{day:
 export const catalogLeagueIds:Record<string,number>={
 "UEFA Şampiyonlar Ligi":2,"UEFA Avrupa Ligi":3,"UEFA Konferans Ligi":848,"Trendyol Süper Lig":203,"Premier League":39,"LALIGA EA SPORTS":140,"Serie A Enilive":135,"Bundesliga":78,"Ligue 1 McDonald's":61,"EFL Championship":40,"Bundesliga 2":79,"Eredivisie":88,"Liga Portugal":94,"Serie BKT":136,"MLS":253,"ROSHN Saudi League":307,"Scottish Premiership":179,"1A Pro League":144
 };
-export const preferredLeagueNames=["UEFA Şampiyonlar Ligi","UEFA Avrupa Ligi","UEFA Konferans Ligi","Trendyol Süper Lig","Premier League","LALIGA EA SPORTS","Serie A Enilive","Hellas Liga"];
+export const preferredLeagueNames=["Trendyol Süper Lig","UEFA Şampiyonlar Ligi","UEFA Avrupa Ligi","UEFA Konferans Ligi"];
