@@ -163,6 +163,41 @@ export async function GET(req:Request){
     json.response=[...chileCandidates,...extra];
     if(!json.response.length)diagnostics.push("Şili takım listelerinde de Audax bulunamadı.");
    }
+   // Universidad Católica in Libertadores is the Chilean club. Name-only search
+   // also returns the unrelated Ecuadorian club; discover Chile candidates by
+   // country and competition before allowing any manual identity confirmation.
+   if(item.name==="Universidad Católica"&&item.league==="CONMEBOL Libertadores"){
+    const chileRows:any[]=[];
+    const seen=new Set<number>();
+    const queries=[
+     "https://v3.football.api-sports.io/teams?country=Chile",
+     "https://v3.football.api-sports.io/teams?league=265&season=2026",
+     "https://v3.football.api-sports.io/teams?league=265&season=2025",
+     "https://v3.football.api-sports.io/teams?search="+encodeURIComponent("Catolica"),
+     "https://v3.football.api-sports.io/teams?search="+encodeURIComponent("Universidad")
+    ];
+    for(const endpoint of queries){
+     try{
+      const r=await fetch(endpoint,{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(15000)});
+      if(!r.ok){diagnostics.push("Şili Católica taraması: HTTP "+r.status);continue;}
+      const data=await r.json();
+      if(data.errors&&Object.keys(data.errors).length){diagnostics.push("Şili Católica API hatası: "+JSON.stringify(data.errors));continue;}
+      const entries=data.response||[];
+      diagnostics.push("Şili Católica taraması: "+entries.length+" takım incelendi.");
+      for(const entry of entries){
+       const t=entry.team||{};
+       const normalizedName=norm(String(t.name||""));
+       if(norm(String(t.country||""))!=="chile"||!normalizedName.includes("catolica"))continue;
+       const id=Number(t.id);
+       if(!Number.isSafeInteger(id)||seen.has(id))continue;
+       seen.add(id);chileRows.push(entry);
+      }
+     }catch(e){diagnostics.push("Şili Católica tarama hatası: "+(e instanceof Error?e.message:"Bilinmeyen hata"));}
+     if(chileRows.length)break;
+    }
+    json.response=chileRows;
+    if(!chileRows.length)diagnostics.push("API-Football Şili dizini, ligleri ve alternatif isim aramalarında Católica bulunamadı.");
+   }
    const candidates=(json.response||[]).map((x:any)=>({apiId:Number(x.team?.id),apiName:String(x.team?.name||""),country:String(x.team?.country||""),founded:x.team?.founded||null})).filter((x:any)=>Number.isSafeInteger(x.apiId));
    const exact=candidates.filter((x:any)=>norm(x.apiName)===norm(item.name));
    const alreadyLinked=new Set((matches||[]).filter(x=>x.status==="matched").map(x=>Number(x.api_team_id)));
