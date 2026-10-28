@@ -14,6 +14,18 @@ export default function FootballImportPage(){
  const [remainingReport,setRemainingReport]=useState<any>(null);
  const [teamImport,setTeamImport]=useState<any>(null);
  const [teamImportPage,setTeamImportPage]=useState(0);
+ const [squadCompletion,setSquadCompletion]=useState<any>(null);
+ async function completeSquads(){
+  setLoading(true);setError("");
+  try{
+   const {data:{session}}=await createClient().auth.getSession();
+   if(!session)throw new Error("Önce yetkili hesabınla giriş yapmalısın.");
+   const response=await fetch("/api/football-squad-completion",{headers:{Authorization:"Bearer "+session.access_token},cache:"no-store"});
+   const json=await response.json();
+   if(!response.ok)throw new Error(json.error||"Eksik kadrolar alınamadı");
+   setSquadCompletion(json);
+  }catch(e){setError(e instanceof Error?e.message:"Bilinmeyen hata")}finally{setLoading(false)}
+ }
  async function importTeamData(){
   setLoading(true);setError("");
   try{
@@ -99,6 +111,11 @@ export default function FootballImportPage(){
     <p>Yalnızca eşleşmiş takımlar: takım bilgisi, kadro ve mevcut sezon takım istatistikleri. Scouting oyuncu verileri değişmez. Her tıklamada 10 takım işlenir.</p>
     <button className="playerBack" type="button" disabled={loading} onClick={()=>importTeamData()}>{loading?"Veriler alınıyor…":"Sonraki 10 takımın verilerini getir"}</button>
     <button className="playerBack" type="button" disabled={loading} onClick={importCatolica} style={{marginLeft:10}}>Universidad Católica (#2994) kadrosunu getir</button>
+    <div style={{marginTop:12}}>
+     <button className="playerBack" type="button" disabled={loading} onClick={completeSquads}>20 oyuncuda kalan 5 takımın kadrosunu tamamla</button>
+     {squadCompletion&&<p>Bekleyen: {squadCompletion.remaining_estimate} · İşlenen: {squadCompletion.processed} · Başarılı: {squadCompletion.results.filter((r:any)=>r.status==="updated").length}</p>}
+     {squadCompletion&&<details><summary>Kadro tamamlama sonuçları</summary><pre style={{whiteSpace:"pre-wrap",fontSize:12}}>{JSON.stringify(squadCompletion.results,null,2)}</pre></details>}
+    </div>
     {teamImport&&<p>İşlenen sayfa: {teamImport.page+1} · Takım: {teamImport.processed} · Sonraki sayfa: {teamImport.nextPage===null?"Bitti":teamImport.nextPage+1} · Hata: {teamImport.results.reduce((n:number,r:any)=>n+r.errors.length,0)}</p>}
     {teamImport&&<details><summary>Takım bazında sonuçlar</summary><pre style={{whiteSpace:"pre-wrap",fontSize:12}}>{JSON.stringify(teamImport.results,null,2)}</pre></details>}
    </div>
