@@ -14,9 +14,14 @@ export async function GET(req:Request){
  const {data:{user},error:authError}=await db.auth.getUser(token);
  if(authError||user?.email?.toLowerCase()!=="gemini.btk@gmail.com")return NextResponse.json({error:"Forbidden"},{status:403});
  const search=new URL(req.url).searchParams;
+ const targetTeam=search.get("team");
+ if(targetTeam!==null&&targetTeam!=="2994")return NextResponse.json({error:"Unsupported team"},{status:400});
  const page=Number(search.get("page")||"0");
  if(!Number.isSafeInteger(page)||page<0||page>1000)return NextResponse.json({error:"Invalid page"},{status:400});
- const {data:matches,error}=await db.from("api_football_team_matches").select("api_team_id,local_team_name").eq("status","matched").order("api_team_id").range(page*PAGE_SIZE,(page+1)*PAGE_SIZE-1);
+ let query=db.from("api_football_team_matches").select("api_team_id,local_team_name").eq("status","matched").order("api_team_id");
+ if(targetTeam)query=query.eq("api_team_id",2994);
+ else query=query.range(page*PAGE_SIZE,(page+1)*PAGE_SIZE-1);
+ const {data:matches,error}=await query;
  if(error)return NextResponse.json({error:error.message},{status:500});
  const results:any[]=[];
  for(const match of matches||[]){
@@ -37,6 +42,12 @@ export async function GET(req:Request){
     if(!body.response||(Array.isArray(body.response)&&body.response.length===0))throw new Error("No data");
     const {error:saveError}=await db.from("api_football_team_data").upsert({api_team_id:id,data_type:task.type,season:task.season,payload:body.response,fetched_at:new Date().toISOString()},{onConflict:"api_team_id,data_type,season"});
     if(saveError)throw saveError;
+    if(task.type==="squad"){
+     const squad=body.response?.[0]?.players;
+     if(!Array.isArray(squad))throw new Error("Invalid squad response");
+     const {error:stageError}=await db.from("api_football_team_squads_staging").upsert({api_team_id:id,local_team_name:match.local_team_name,players:squad,source_endpoint:"players/squads",source_season:null,fetched_at:new Date().toISOString()},{onConflict:"api_team_id"});
+     if(stageError)throw stageError;
+    }
     result.saved.push(task.type);
    }catch(e){result.errors.push(task.type+": "+(e instanceof Error?e.message:"Unknown error"))}
   }
