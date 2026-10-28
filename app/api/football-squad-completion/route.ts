@@ -25,15 +25,37 @@ export async function GET(req:Request){
    if(!response.ok)throw new Error("API HTTP "+response.status);
    const body=await response.json();
    if(body.errors&&Object.keys(body.errors).length)throw new Error(JSON.stringify(body.errors));
-   const squad=body.response?.find((r:any)=>Number(r.team?.id)===id)?.players;
+   let squad=body.response?.find((r:any)=>Number(r.team?.id)===id)?.players;
+   let endpoint="players/squads";
+   let season:number|null=null;
+   if(!Array.isArray(squad)||squad.length===0){
+    const {data:metadata}=await db.from("api_football_teams").select("season").eq("api_team_id",id).maybeSingle();
+    season=Number(metadata?.season)||2026;
+    const collected=new Map<number,any>();
+    for(let page=1;page<=15;page++){
+     const apiUrl="https://v3.football.api-sports.io/players?team="+id+"&season="+season+"&page="+page;
+     const res=await fetch(apiUrl,{headers:{"x-apisports-key":key},cache:"no-store",signal:AbortSignal.timeout(9000)});
+     if(!res.ok)throw new Error("Players page "+page+": HTTP "+res.status);
+     const data=await res.json();
+     if(data.errors&&Object.keys(data.errors).length)throw new Error("Players page "+page+": "+JSON.stringify(data.errors));
+     for(const entry of data.response||[]){
+      if(!Array.isArray(entry.statistics)||!entry.statistics.some((x:any)=>Number(x.team?.id)===id))continue;
+      if(entry.player?.id)collected.set(Number(entry.player.id),entry.player);
+     }
+     if(page>=(Number(data.paging?.total)||1))break;
+     if(page===15)throw new Error("More than 15 pages; old data retained");
+    }
+    squad=Array.from(collected.values());
+    endpoint="players";
+   }
    if(!Array.isArray(squad)||squad.length===0)throw new Error("No valid squad");
    if(squad.length<20)throw new Error("New squad smaller than old; retained old data");
    const now=new Date().toISOString();
-   const {error:saveError}=await db.from("api_football_team_squads_staging").update({players:squad,source_endpoint:"players/squads",source_season:null,fetched_at:now}).eq("api_team_id",id).eq("source_endpoint","players");
+   const {error:saveError}=await db.from("api_football_team_squads_staging").update({players:squad,source_endpoint:endpoint,source_season:season,fetched_at:now}).eq("api_team_id",id).eq("source_endpoint","players");
    if(saveError)throw saveError;
-   const {error:dataError}=await db.from("api_football_team_data").upsert({api_team_id:id,data_type:"squad",season:0,payload:body.response,fetched_at:now},{onConflict:"api_team_id,data_type,season"});
+   const {error:dataError}=endpoint==="players/squads"?await db.from("api_football_team_data").upsert({api_team_id:id,data_type:"squad",season:0,payload:body.response,fetched_at:now},{onConflict:"api_team_id,data_type,season"}):{error:null};
    if(dataError)result.warning="Squad staging updated, team_data: "+dataError.message;
-   result.new_count=squad.length;result.status="updated";
+   result.new_count=squad.length;result.endpoint=endpoint;result.status="updated";
   }catch(e){result.status="error";result.error=e instanceof Error?e.message:"Unknown error";}
   results.push(result);
  }
