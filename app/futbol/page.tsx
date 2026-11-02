@@ -22,7 +22,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  const displayLeagueName=chosenName||Object.entries(catalogLeagueIds).find(([,id])=>id===league)?.[0]||"Trendyol Süper Lig";
  const today=istanbulDate(new Date());
  const toFixture=(x:any):Fixture=>({fixture_id:x.fixture.id,league_id:x.league.id,kickoff:x.fixture.date,status:x.fixture.status.short,home_team_id:x.teams.home.id,away_team_id:x.teams.away.id,home_goals:x.goals.home,away_goals:x.goals.away,raw:x});
- const [standingsResult,catalogResult]=await Promise.all([db.from("api_football_standings").select("league_id,season,team_id,rank,points,played,goal_difference,raw").eq("league_id",league).eq("season",season).order("rank").limit(30),db.from("league_catalog_summary").select("name,rating,averageAge,averageValue").limit(100)]);
+ const [standingsResult,catalogResult]=await Promise.all([db.from("api_football_standings").select("league_id,season,team_id,rank,points,played,goal_difference,raw").eq("league_id",league).eq("season",season).order("rank").limit(100),db.from("league_catalog_summary").select("name,rating,averageAge,averageValue").limit(100)]);
  let seasonFixtures:Fixture[]=[];
  let sourceUnavailable=Boolean(chosenName&&!resolved);
  if(apiKey&&league){
@@ -34,7 +34,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
    seasonFixtures=(json.response||[]).map(toFixture);
   }catch{sourceUnavailable=true}
  }else sourceUnavailable=true;
- if(sourceUnavailable&&league){
+ if((sourceUnavailable||seasonFixtures.length===0)&&league){
   const {data}=await db.from("api_football_fixtures").select("fixture_id,league_id,kickoff,status,home_team_id,away_team_id,home_goals,away_goals,raw").eq("league_id",league).eq("season",season).order("kickoff").limit(700);
   seasonFixtures=(data||[]) as Fixture[];
  }
@@ -65,11 +65,13 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  // Count distinct clubs from the selected league's fixtures, never a global 38-week default.
  const leagueTeamIds=new Set(seasonFixtures.filter(f=>f.league_id===league).flatMap(f=>[f.home_team_id,f.away_team_id]).filter(id=>id>0));
  const teamCount=leagueTeamIds.size>=4?leagueTeamIds.size:new Set((standingsResult.data||[]).map(s=>s.team_id).filter(Boolean)).size;
- const regularSeasonWeeks=teamCount>=4?2*(teamCount-1):null;
+ // Competition formats vary: Apertura/Clausura, split groups, playoffs and cups.
+ // Never infer or truncate rounds from a double round-robin formula.
  const isUefaCompetition=[2,3,848].includes(league);
- const regularRounds=Array.from(roundMap.keys()).filter(round=>/^Regular Season[ ]*-[ ]*[0-9]+$/i.test(round));
- const roundCandidates=isUefaCompetition?Array.from(roundMap.keys()):regularRounds.length?regularRounds:Array.from(roundMap.keys());
- const orderedRounds=roundCandidates.filter(round=>isUefaCompetition||roundNumber(round)>0&&(!regularSeasonWeeks||roundNumber(round)<=regularSeasonWeeks)).sort((a,b)=>isUefaCompetition?Math.min(...(roundMap.get(a)||[]).map(f=>new Date(f.kickoff).getTime()))-Math.min(...(roundMap.get(b)||[]).map(f=>new Date(f.kickoff).getTime())):roundNumber(a)-roundNumber(b));
+ const orderedRounds=Array.from(roundMap.keys()).sort((a,b)=>{
+  const first=(round:string)=>Math.min(...(roundMap.get(round)||[]).map(f=>new Date(f.kickoff).getTime()));
+  return first(a)-first(b)||a.localeCompare(b,undefined,{numeric:true});
+ });
  // A new matchweek becomes the default at 00:00 Istanbul time on its first match day.
  const todayStart=new Date(today+"T00:00:00+03:00").getTime();
  const roundStart=(round:string)=>Math.min(...(roundMap.get(round)||[]).map(f=>new Date(istanbulDate(new Date(f.kickoff))+"T00:00:00+03:00").getTime()));
@@ -78,7 +80,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  const selectedRound=params.week&&orderedRounds.includes(params.week)?params.week:defaultRound;
  const matches=(roundMap.get(selectedRound)||[]).slice().sort((a,b)=>new Date(a.kickoff).getTime()-new Date(b.kickoff).getTime());
  const groupedMatches=Array.from(matches.reduce((map,fixture)=>{const date=istanbulDate(new Date(fixture.kickoff));if(!map.has(date))map.set(date,[]);map.get(date)!.push(fixture);return map},new Map<string,Fixture[]>()).entries());
- const roundOptions=orderedRounds.map(round=>({value:round,label:isUefaCompetition?round.replace(/^League Stage[ ]*-[ ]*/i,"Lig aşaması ").replace(/^Group Stage[ ]*-[ ]*/i,"Grup aşaması ").replace(/^Round of 16$/i,"Son 16").replace(/^Quarter-finals$/i,"Çeyrek final").replace(/^Semi-finals$/i,"Yarı final").replace(/^Final$/i,"Final"):roundNumber(round)?roundNumber(round)+". hafta":round}));
+ const roundOptions=orderedRounds.map(round=>({value:round,label:round.replace(/^Regular Season[ ]*-[ ]*/i,"").replace(/^Group Stage[ ]*-[ ]*/i,"Grup ").replace(/^League Stage[ ]*-[ ]*/i,"Lig aşaması ").replace(/^Apertura[ ]*-[ ]*/i,"Apertura ").replace(/^Clausura[ ]*-[ ]*/i,"Clausura ").replace(/^Championship Group[ ]*-[ ]*/i,"Şampiyonluk grubu ").replace(/^Relegation Group[ ]*-[ ]*/i,"Düşme grubu ").replace(/^Round of 32$/i,"Son 32").replace(/^Round of 16$/i,"Son 16").replace(/^Quarter-finals$/i,"Çeyrek final").replace(/^Semi-finals$/i,"Yarı final")}));
  let standings:any[]=standingsResult.data||[];
  if(process.env.API_FOOTBALL_KEY&&league){
   try{
