@@ -15,7 +15,7 @@ export async function GET(req:Request){
  if(user?.email?.toLowerCase()!=="gemini.btk@gmail.com")return NextResponse.json({error:"Forbidden"},{status:403});
  const {data:leagueRows,error:leagueError}=await db.from("api_football_teams").select("league_id").eq("season",2026).not("league_id","is",null).limit(2000);
  if(leagueError)return NextResponse.json({error:"Lig listesi alınamadı"},{status:503});
- const ids=[...new Set((leagueRows||[]).map(x=>Number(x.league_id)).filter(x=>Number.isInteger(x)&&x>0))].sort((a,b)=>a-b);
+ const ids:number[]=Array.from(new Set<number>((leagueRows||[]).map((x:{league_id:number|null})=>Number(x.league_id)).filter((x:number)=>Number.isInteger(x)&&x>0))).sort((a:number,b:number)=>a-b);
  const groups=Array.from({length:Math.ceil(ids.length/BATCH_SIZE)},(_,i)=>({id:String(i),label:"Lig grubu "+(i+1)+" ("+ids.slice(i*BATCH_SIZE,(i+1)*BATCH_SIZE).length+" lig)",leagues:ids.slice(i*BATCH_SIZE,(i+1)*BATCH_SIZE)}));
  const batch=new URL(req.url).searchParams.get("batch");
  const selected=groups.find(g=>g.id===batch)?.leagues;
