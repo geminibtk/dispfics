@@ -68,9 +68,36 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  // Competition formats vary: Apertura/Clausura, split groups, playoffs and cups.
  // Never infer or truncate rounds from a double round-robin formula.
  const isUefaCompetition=[2,3,848].includes(league);
+ // Order competition phases logically, then round numbers. Dates are only used
+ // within the same round for fixtures and for phases without numeric rounds.
+ const roundParts=(round:string)=>{
+  const match=round.match(/^(.*?)\\s*-\\s*(\\d+)$/);
+  return {phase:(match?match[1]:round).trim(),number:match?Number(match[2]):null};
+ };
+ const phaseOrder=(phase:string)=>{
+  const p=phase.toLowerCase();
+  if(p.includes("apertura"))return 0;
+  if(p.includes("clausura"))return 1;
+  if(p.includes("regular season")||p.includes("league stage"))return 2;
+  if(p.includes("group stage"))return 3;
+  if(p.includes("qualification")||p.includes("preliminary"))return 4;
+  if(p.includes("championship group"))return 5;
+  if(p.includes("relegation group"))return 6;
+  if(p.includes("round of 32"))return 7;
+  if(p.includes("round of 16"))return 8;
+  if(p.includes("quarter"))return 9;
+  if(p.includes("semi"))return 10;
+  if(p==="final")return 11;
+  return 12;
+ };
+ const firstKickoff=(round:string)=>Math.min(...(roundMap.get(round)||[]).map(f=>new Date(f.kickoff).getTime()));
  const orderedRounds=Array.from(roundMap.keys()).sort((a,b)=>{
-  const first=(round:string)=>Math.min(...(roundMap.get(round)||[]).map(f=>new Date(f.kickoff).getTime()));
-  return first(a)-first(b)||a.localeCompare(b,undefined,{numeric:true});
+  const x=roundParts(a),y=roundParts(b);
+  const stageDiff=phaseOrder(x.phase)-phaseOrder(y.phase);
+  if(stageDiff)return stageDiff;
+  if(x.phase!==y.phase)return firstKickoff(a)-firstKickoff(b)||x.phase.localeCompare(y.phase);
+  if(x.number!==null&&y.number!==null)return x.number-y.number;
+  return firstKickoff(a)-firstKickoff(b)||a.localeCompare(b,undefined,{numeric:true});
  });
  // A new matchweek becomes the default at 00:00 Istanbul time on its first match day.
  const todayStart=new Date(today+"T00:00:00+03:00").getTime();
