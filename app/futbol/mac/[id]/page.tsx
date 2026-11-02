@@ -41,7 +41,7 @@ export default async function MatchPage({params}:{params:Promise<{id:string}>}){
  const pitchRows=(team:any)=>{const players=team.startXI||[];const grouped=new Map<number,any[]>();for(const item of players){const row=Number(String(item.player?.grid||"").split(":")[0]);const key=Number.isFinite(row)&&row>0?row:99;if(!grouped.has(key))grouped.set(key,[]);grouped.get(key)!.push(item)}return Array.from(grouped.entries()).sort((a,b)=>a[0]-b[0]).map(x=>x[1])};
 
  return <AppShell title="Maç Detayı" hideTitle><div className={styles.root}>
- <Link className={styles.back} href="/futbol">← Futbol Merkezi</Link>
+ <a className={styles.back} href="/futbol">← Futbol Merkezi</a>
  <header className={styles.header}><span className={styles.kicker}>{leagueName(f.league_id)} · {f.season||new Date(f.kickoff).getUTCFullYear()}</span><h1>Maç <em>Detayı</em></h1><p>{dateLabel(f.kickoff)} · {f.raw?.fixture?.venue?.name||"Stadyum bilgisi yok"}</p></header>
  {!current&&<p className={styles.liveNotice} style={{padding:14,marginBottom:16}}>Güncel API verisine erişilemedi. {stored?"Son kayıtlı maç bilgileri gösteriliyor.":"Maç bilgileri doğrulanamadı."}</p>}
  <div className={styles.panel} style={{padding:28,marginBottom:18}}>
