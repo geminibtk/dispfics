@@ -99,6 +99,24 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  }
  // Enforce the selected league on every standings source before rendering.
  standings=standings.filter(s=>Number(s.league_id)===league&&Number(s.season)===season&&leagueTeamIds.has(Number(s.team_id)));
+ // Some leagues have no published API standings (e.g. LPF, Finland, Colombia).
+ // Derive a provisional table from completed regular-stage fixtures rather than show nothing.
+ if(!standings.length&&seasonFixtures.length){
+  const finished=seasonFixtures.filter(f=>f.league_id===league&&f.status==="FT"&&f.home_goals!==null&&f.away_goals!==null);
+  const stage=(round:string)=>round.replace(/\\s*-\\s*\\d+$/,"").trim();
+  const eligible=finished.filter(f=>!/(final|quarter|semi|round of|qualification|relegation|championship|playoff)/i.test(String(f.raw?.league?.round||"")));
+  const stages=Array.from(new Set(eligible.map(f=>stage(String(f.raw?.league?.round||""))).filter(Boolean)));
+  const chosenStage=stages.includes(stage(selectedRound))?stage(selectedRound):stages.includes("Clausura")?"Clausura":stages.includes("Regular Season")?"Regular Season":stages[0];
+  const games=eligible.filter(f=>stage(String(f.raw?.league?.round||""))===chosenStage);
+  const totals=new Map<number,{team_id:number;rank:number;points:number;played:number;goal_difference:number;scored:number;raw:any}>();
+  for(const f of games){
+   for(const [id,goals,against] of [[f.home_team_id,f.home_goals!,f.away_goals!],[f.away_team_id,f.away_goals!,f.home_goals!]]){
+    const row=totals.get(id)||{team_id:id,rank:0,points:0,played:0,goal_difference:0,scored:0,raw:{team:{id}}};
+    row.played++;row.points+=goals>against?3:goals===against?1:0;row.goal_difference+=goals-against;row.scored+=goals;totals.set(id,row);
+   }
+  }
+  standings=Array.from(totals.values()).sort((a,b)=>b.points-a.points||b.goal_difference-a.goal_difference||b.scored-a.scored).map((row,i)=>({...row,rank:i+1,league_id:league,season}));
+ }
  const catalog=(catalogResult.data||[]).map(x=>x.name).filter(Boolean);
  const others=sortOverviewLeagues((catalogResult.data||[])).map(l=>l.name).filter(n=>!preferredLeagueNames.includes(n));
  const ids=Array.from(new Set([...matches.flatMap(f=>[f.home_team_id,f.away_team_id]),...standings.map(s=>s.team_id)].filter(Boolean)));
