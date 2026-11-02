@@ -95,6 +95,8 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
    }
   }catch{}
  }
+ // Enforce the selected league on every standings source before rendering.
+ standings=standings.filter(s=>Number(s.league_id)===league&&Number(s.season)===season&&leagueTeamIds.has(Number(s.team_id)));
  const catalog=(catalogResult.data||[]).map(x=>x.name).filter(Boolean);
  const others=sortOverviewLeagues((catalogResult.data||[])).map(l=>l.name).filter(n=>!preferredLeagueNames.includes(n));
  const ids=Array.from(new Set([...matches.flatMap(f=>[f.home_team_id,f.away_team_id]),...standings.map(s=>s.team_id)].filter(Boolean)));
@@ -114,7 +116,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  return <AppShell title="Futbol Merkezi" hideTitle><div className={styles.root}>
   <div className={styles.hero}><div><span className={styles.kicker}>YANIMDAFUTBOL · FUTBOL MERKEZİ</span><h1>Futbolun <em>nabzı.</em></h1><p>Maçlar, sonuçlar ve lig tabloları. Hepsi tek yerde.</p></div><div className={styles.heroIcon}>⚽</div></div>
   <div className={styles.toolbar}><div className={styles.sectionTitle}><h2>Maçlar</h2></div></div>
-  <div className={styles.leagueNav}><div className={styles.leagueStrip}>{preferredLeagueNames.map(name=><Link key={name} className={(chosenName===name||(!chosenName&&catalogLeagueIds[name]===league))?styles.selected:""} href={link({league:String(catalogLeagueIds[name]||""),name:catalogLeagueIds[name]?"":name})}>{(chosenName===name||(!chosenName&&catalogLeagueIds[name]===league))?<img className={styles.leagueLogo} src={"https://media.api-sports.io/football/leagues/"+catalogLeagueIds[name]+".png"} alt="" loading="lazy" width={24} height={24}/>:null}<span>{name}</span></Link>)} </div><LeaguePicker names={others} selected={chosenName||Object.keys(catalogLeagueIds).find(n=>catalogLeagueIds[n]===league)||""} tab="results"/></div>
+  <div className={styles.leagueNav}><div className={styles.leagueStrip}>{preferredLeagueNames.map(name=><Link key={name} className={(chosenName===name||(!chosenName&&catalogLeagueIds[name]===league))?styles.selected:""} href={link({league:String(catalogLeagueIds[name]||""),name:catalogLeagueIds[name]?"":name})} prefetch={false}>{(chosenName===name||(!chosenName&&catalogLeagueIds[name]===league))?<img className={styles.leagueLogo} src={"https://media.api-sports.io/football/leagues/"+catalogLeagueIds[name]+".png"} alt="" loading="lazy" width={24} height={24}/>:null}<span>{name}</span></Link>)} </div><LeaguePicker names={others} selected={chosenName||Object.keys(catalogLeagueIds).find(n=>catalogLeagueIds[n]===league)||""} tab="results"/></div>
   <WeekPicker rounds={roundOptions} selected={selectedRound} league={league} name={chosenName}/>
   <div className={styles.layout}><section className={styles.primary}>
   {matches.length?groupedMatches.map(([date,fixtures])=><div className={styles.panel} style={{marginBottom:14}} key={date}><div className={styles.panelTitle}><strong>{formatDate(date)}</strong></div>
