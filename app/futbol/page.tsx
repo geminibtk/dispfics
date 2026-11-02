@@ -82,6 +82,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
  const groupedMatches=Array.from(matches.reduce((map,fixture)=>{const date=istanbulDate(new Date(fixture.kickoff));if(!map.has(date))map.set(date,[]);map.get(date)!.push(fixture);return map},new Map<string,Fixture[]>()).entries());
  const roundOptions=orderedRounds.map(round=>({value:round,label:round.replace(/^Regular Season[ ]*-[ ]*/i,"").replace(/^Group Stage[ ]*-[ ]*/i,"Grup ").replace(/^League Stage[ ]*-[ ]*/i,"Lig aşaması ").replace(/^Apertura[ ]*-[ ]*/i,"Apertura ").replace(/^Clausura[ ]*-[ ]*/i,"Clausura ").replace(/^Championship Group[ ]*-[ ]*/i,"Şampiyonluk grubu ").replace(/^Relegation Group[ ]*-[ ]*/i,"Düşme grubu ").replace(/^Round of 32$/i,"Son 32").replace(/^Round of 16$/i,"Son 16").replace(/^Quarter-finals$/i,"Çeyrek final").replace(/^Semi-finals$/i,"Yarı final")}));
  let standings:any[]=standingsResult.data||[];
+ let provisionalStandings=false;
  if(process.env.API_FOOTBALL_KEY&&league){
   try{
    const sid=league;
@@ -115,6 +116,7 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
     row.played++;row.points+=goals>against?3:goals===against?1:0;row.goal_difference+=goals-against;row.scored+=goals;totals.set(id,row);
    }
   }
+  provisionalStandings=totals.size>0;
   standings=Array.from(totals.values()).sort((a,b)=>b.points-a.points||b.goal_difference-a.goal_difference||b.scored-a.scored).map((row,i)=>({...row,rank:i+1,league_id:league,season}));
  }
  const catalog=(catalogResult.data||[]).map(x=>x.name).filter(Boolean);
@@ -142,6 +144,6 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
   {matches.length?groupedMatches.map(([date,fixtures])=><div className={styles.panel} style={{marginBottom:14}} key={date}><div className={styles.panelTitle}><strong>{formatDate(date)}</strong></div>
   {fixtures.map(f=><Link className={styles.match} href={"/futbol/mac/"+f.fixture_id} key={f.fixture_id}><div className={styles.matchLeague}><span>{dateLabel(f.kickoff)}</span><span>{FINISHED.includes(f.status)?"Maç sonu":LIVE.includes(f.status)?"CANLI "+(f.raw?.fixture?.status?.elapsed||"")+"′":"Başlamadı"}</span></div><div className={styles.matchLine}><div className={styles.teamName}>{teamBadge(f.home_team_id,f.raw?.teams?.home)}<span>{nameMap.get(f.home_team_id)?.name||f.raw?.teams?.home?.name||"Ev sahibi"}</span></div><strong className={styles.score}>{f.home_goals??"–"} <span>:</span> {f.away_goals??"–"}</strong><div className={styles.teamName+" "+styles.away}><span>{nameMap.get(f.away_team_id)?.name||f.raw?.teams?.away?.name||"Deplasman"}</span>{teamBadge(f.away_team_id,f.raw?.teams?.away)}</div></div></Link>)}</div>):<div className={styles.panel}><div className={styles.empty}>{"Bu hafta için maç bulunamadı."}{sourceUnavailable?" API bağlantısı kullanılamadığından kayıtlı veriler kontrol edildi.":""}</div></div>}
   </section>
-  <aside className={styles.secondary}><div className={styles.panel}><div className={styles.panelTitle}><strong>{displayLeagueName} · Puan durumu</strong></div><div className={styles.tableHead}><span>Takım</span><span>O</span><span>AV</span><span>P</span></div>{standings.length?standings.map(s=><Link key={s.team_id+"-"+s.season} href={"/futbol/takim/"+s.team_id} className={styles.tableRow}><span className={styles.tableTeam}><b>{s.rank}</b>{teamBadge(s.team_id,s.raw?.team)}<span>{nameMap.get(s.team_id)?.name||s.raw?.team?.name||"Takım"}</span></span><span>{s.played}</span><span>{s.goal_difference}</span><strong>{s.points}</strong></Link>):<div className={styles.empty}>Bu lig için puan durumu bulunamadı.</div>}</div></aside></div>
+  <aside className={styles.secondary}><div className={styles.panel}><div className={styles.panelTitle}><strong>{displayLeagueName} · Puan durumu{provisionalStandings?" (maç sonuçlarından hesaplandı)":""}</strong></div><div className={styles.tableHead}><span>Takım</span><span>O</span><span>AV</span><span>P</span></div>{standings.length?standings.map(s=><Link key={s.team_id+"-"+s.season} href={"/futbol/takim/"+s.team_id} className={styles.tableRow}><span className={styles.tableTeam}><b>{s.rank}</b>{teamBadge(s.team_id,s.raw?.team)}<span>{nameMap.get(s.team_id)?.name||s.raw?.team?.name||"Takım"}</span></span><span>{s.played}</span><span>{s.goal_difference}</span><strong>{s.points}</strong></Link>):<div className={styles.empty}>Bu lig için puan durumu bulunamadı.</div>}</div></aside></div>
  </div></AppShell>;
 }
