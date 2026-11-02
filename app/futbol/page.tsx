@@ -95,6 +95,8 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
    }
   }catch{}
  }
+ // Enforce the selected league on every standings source before rendering.
+ standings=standings.filter(s=>Number(s.league_id)===league&&Number(s.season)===season&&leagueTeamIds.has(Number(s.team_id)));
  const catalog=(catalogResult.data||[]).map(x=>x.name).filter(Boolean);
  const others=sortOverviewLeagues((catalogResult.data||[])).map(l=>l.name).filter(n=>!preferredLeagueNames.includes(n));
  const ids=Array.from(new Set([...matches.flatMap(f=>[f.home_team_id,f.away_team_id]),...standings.map(s=>s.team_id)].filter(Boolean)));
