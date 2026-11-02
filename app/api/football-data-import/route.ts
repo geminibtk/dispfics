@@ -2,9 +2,7 @@ import {NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
 export const dynamic="force-dynamic";
 export const maxDuration=60;
-const LEAGUES=[203,39,140,78,135];
-const SECOND_A=[88,61,94,40,79];
-const SECOND_B=[136,253,307,179,144];
+const BATCH_SIZE=5;
 export async function GET(req:Request){
  const token=req.headers.get("authorization")?.replace(/^Bearer /,"");
  if(!token)return NextResponse.json({error:"Unauthorized"},{status:401});
@@ -15,12 +13,17 @@ export async function GET(req:Request){
  const db=createClient(url,secret,{auth:{persistSession:false}});
  const {data:{user}}=await db.auth.getUser(token);
  if(user?.email?.toLowerCase()!=="gemini.btk@gmail.com")return NextResponse.json({error:"Forbidden"},{status:403});
+ const {data:leagueRows,error:leagueError}=await db.from("api_football_teams").select("league_id").eq("season",2026).not("league_id","is",null).limit(2000);
+ if(leagueError)return NextResponse.json({error:"Lig listesi alınamadı"},{status:503});
+ const ids=[...new Set((leagueRows||[]).map(x=>Number(x.league_id)).filter(x=>Number.isInteger(x)&&x>0))].sort((a,b)=>a-b);
+ const groups=Array.from({length:Math.ceil(ids.length/BATCH_SIZE)},(_,i)=>({id:String(i),label:"Lig grubu "+(i+1)+" ("+ids.slice(i*BATCH_SIZE,(i+1)*BATCH_SIZE).length+" lig)",leagues:ids.slice(i*BATCH_SIZE,(i+1)*BATCH_SIZE)}));
  const batch=new URL(req.url).searchParams.get("batch");
- const selected=batch==="second-a"?SECOND_A:batch==="second-b"?SECOND_B:LEAGUES;
+ const selected=groups.find(g=>g.id===batch)?.leagues;
+ if(new URL(req.url).searchParams.get("groups")==="1")return NextResponse.json({season:2026,total:ids.length,groups},{headers:{"Cache-Control":"no-store"}});
+ if(!selected)return NextResponse.json({error:"Geçersiz lig grubu"},{status:400});
  if(new URL(req.url).searchParams.get("audit")==="1"){
-  const ids=[203,39,140,78,135,88,61,94,40,79,136,253,307,179,144];
   const audits:any[]=[];
-  for(const league of ids){
+  for(const league of selected){
    const [{data:teams,error:teamError},{count:fixtureCount,error:fixtureError},{count:standingCount,error:standingError}]=await Promise.all([
     db.from("api_football_teams").select("api_team_id").eq("league_id",league).eq("season",2026),
     db.from("api_football_fixtures").select("*",{count:"exact",head:true}).eq("league_id",league).eq("season",2026),
