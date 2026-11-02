@@ -71,8 +71,11 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
    const res=await fetch("https://v3.football.api-sports.io/standings?league="+sid+"&season="+season,{headers:{"x-apisports-key":process.env.API_FOOTBALL_KEY},cache:"no-store",signal:AbortSignal.timeout(9000)});
    const json=await res.json();
    if(res.ok&&!Object.keys(json.errors||{}).length){
-    const groups=json.response?.[0]?.league?.standings||[];
-    const fresh=groups.flat().map((x:any)=>({league_id:sid,season,team_id:x.team.id,rank:x.rank,points:x.points,played:x.all?.played,goal_difference:x.goalsDiff,raw:x}));
+    // API responses can contain stale or mixed league groups after navigation.
+    // Never render a standing row unless its team belongs to the selected league's fixtures.
+    const responseLeague=json.response?.[0]?.league;
+    const groups=Number(responseLeague?.id)===sid?responseLeague?.standings||[]:[];
+    const fresh=groups.flat().filter((x:any)=>leagueTeamIds.has(Number(x?.team?.id))).map((x:any)=>({league_id:sid,season,team_id:x.team.id,rank:x.rank,points:x.points,played:x.all?.played,goal_difference:x.goalsDiff,raw:x}));
     if(fresh.length){standings=fresh}
    }
   }catch{}
