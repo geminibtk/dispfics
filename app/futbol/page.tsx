@@ -126,7 +126,18 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
   if(matching.length)standingGroups=matching;
   standings=standingGroups.flatMap(g=>g.rows);
  }
- if(!standingGroups.length&&standings.length)standingGroups=[{label:provisionalStandings?"Maç sonuçlarından hesaplandı":"Genel puan durumu",rows:standings}];
+ if(!standingGroups.length&&standings.length){
+  const byGroup=new Map<string,any[]>();
+  for(const row of standings){
+   const label=String(row.raw?.group||row.raw?.league?.round||"").trim();
+   const key=label|| (provisionalStandings?"Maç sonuçlarından hesaplandı":"Genel puan durumu");
+   if(!byGroup.has(key))byGroup.set(key,[]);
+   byGroup.get(key)!.push(row);
+  }
+  standingGroups=Array.from(byGroup,([label,rows])=>({label,rows}));
+ }
+ // Group labels can be repeated across different stages; retain stage identity.
+ standingGroups=standingGroups.filter(g=>g.rows.length>0);
  const catalog=(catalogResult.data||[]).map(x=>x.name).filter(Boolean);
  const others=sortOverviewLeagues((catalogResult.data||[])).map(l=>l.name).filter(n=>!preferredLeagueNames.includes(n));
  const ids=Array.from(new Set([...matches.flatMap(f=>[f.home_team_id,f.away_team_id]),...standings.map(s=>s.team_id)].filter(Boolean)));
