@@ -38,6 +38,21 @@ export default async function FootballCenter({searchParams}:{searchParams:Promis
   const {data}=await db.from("api_football_fixtures").select("fixture_id,league_id,kickoff,status,home_team_id,away_team_id,home_goals,away_goals,raw").eq("league_id",league).eq("season",season).order("kickoff").limit(700);
   seasonFixtures=(data||[]) as Fixture[];
  }
+ // Refresh in-progress matches by fixture ID, matching the detail page's data source.
+ // This avoids stale league-wide fixture caches while keeping season schedules cacheable.
+ const liveFixtures=seasonFixtures.filter(f=>LIVE.includes(f.status));
+ if(apiKey&&liveFixtures.length){
+  const updates=await Promise.all(liveFixtures.slice(0,15).map(async fixture=>{
+   try{
+    const res=await fetch("https://v3.football.api-sports.io/fixtures?id="+fixture.fixture_id,{headers:{"x-apisports-key":apiKey},cache:"no-store",signal:AbortSignal.timeout(5000)});
+    const json=await res.json();
+    const x=json.response?.[0];
+    return res.ok&&x?.fixture?.id===fixture.fixture_id&&x?.league?.id===league?toFixture(x):null;
+   }catch{return null}
+  }));
+  const latest=new Map(updates.filter((f):f is Fixture=>f!==null).map(f=>[f.fixture_id,f]));
+  seasonFixtures=seasonFixtures.map(f=>latest.get(f.fixture_id)||f);
+ }
  const roundMap=new Map<string,Fixture[]>();
  for(const fixture of seasonFixtures){
   const round=fixture.raw?.league?.round;
