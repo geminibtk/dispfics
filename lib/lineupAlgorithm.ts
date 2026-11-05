@@ -111,7 +111,8 @@ export function computeAutomaticLineup(
   const byId=new Map(pool.map(p=>[String(p.id),p]));
   let selected:Record<string,string>={};
   const relocatedRoles=new Set<string>();
-  const oldRule=formationIndex>=0&&formationIndex<16;
+  // Use the same position-priority relocation rule for every formation.
+  const oldRule=true;
 
   function place(pid:string,currentRole:string|null,blocked:Set<string>,moving:Set<string>):boolean{
     const p=byId.get(pid);if(!p)return false;
@@ -146,6 +147,7 @@ export function computeAutomaticLineup(
   }
 
   for(const p of pool){
+    if(Object.values(selected).filter(Boolean).length>=slots.length)break;
     const snapshot={...selected};
     if(!place(String(p.id),null,new Set(),new Set([String(p.id)])))selected=snapshot;
   }
